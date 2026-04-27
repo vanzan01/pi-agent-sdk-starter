@@ -20,10 +20,7 @@ import {
 import {
   getChatModelPreferenceSetting,
   getDebugMode,
-  getGlmApiKey,
-  getGlmModels,
   getPiModelPreference,
-  getProvider,
   getSystemPromptAppend,
   getThinkingLevel,
   getWorkspaceDir,
@@ -51,7 +48,6 @@ const FAST_MODEL_ID = 'gpt-5.4';
 const SMART_MODEL_ID = 'gpt-5.4';
 const DEEP_MODEL_ID = 'gpt-5.5';
 const CODEX_PROVIDER = 'openai-codex';
-const GLM_PROVIDER = 'zai';
 
 const MODEL_BY_PREFERENCE: Record<ChatModelPreference, string> = {
   fast: FAST_MODEL_ID,
@@ -175,10 +171,7 @@ function getModelIdForPreference(preference?: ChatModelPreference): string {
 
 type PiThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
 
-function mapThinkingLevel(level: ThinkingLevel, provider: string): PiThinkingLevel {
-  if (provider === GLM_PROVIDER) {
-    return 'off';
-  }
+function mapThinkingLevel(level: ThinkingLevel): PiThinkingLevel {
   return level;
 }
 
@@ -215,24 +208,10 @@ async function createPiSession(
   const piPaths = ensurePiRuntimePaths(cwd);
   const authStorage = createEmbeddedPiAuthStorage();
   const selectedPiModel = getPiModelPreference(preference);
-  const legacyProvider = getProvider() === 'glm' ? GLM_PROVIDER : CODEX_PROVIDER;
-  const provider = selectedPiModel?.provider ?? legacyProvider;
-  const fallbackModelId =
-    legacyProvider === GLM_PROVIDER ?
-      getGlmModels()[preference]
-    : getModelIdForPreference(preference);
+  const provider = selectedPiModel?.provider ?? CODEX_PROVIDER;
+  const fallbackModelId = getModelIdForPreference(preference);
   const rawModelId = selectedPiModel?.modelId ?? fallbackModelId;
-  const effectiveModelId = provider === GLM_PROVIDER ? rawModelId.toLowerCase() : rawModelId;
-
-  if (provider === GLM_PROVIDER) {
-    const glmApiKey = getGlmApiKey();
-    if (!glmApiKey) {
-      throw new Error(
-        'GLM_API_KEY_MISSING: Z.AI GLM provider is selected but no API key is configured.'
-      );
-    }
-    authStorage.setRuntimeApiKey(GLM_PROVIDER, glmApiKey);
-  }
+  const effectiveModelId = rawModelId;
 
   const modelRegistry = createEmbeddedPiModelRegistry(authStorage);
   const model =
@@ -258,7 +237,7 @@ async function createPiSession(
   const { session } = await createAgentSession({
     cwd,
     model,
-    thinkingLevel: mapThinkingLevel(getThinkingLevel(), provider),
+    thinkingLevel: mapThinkingLevel(getThinkingLevel()),
     authStorage,
     modelRegistry,
     resourceLoader,

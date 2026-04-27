@@ -1,4 +1,4 @@
-import { getProvider, getSystemPromptAppend } from '../lib/config';
+import { getSystemPromptAppend } from '../lib/config';
 
 export type ModelTier = 'fast' | 'smart' | 'deep';
 
@@ -18,8 +18,4 @@ export function buildSystemPromptAppend(...appends: (string | null | undefined)[
     (text) => typeof text === 'string' && text.trim().length > 0
   );
   return pieces.join('\n\n');
-}
-
-export function getCurrentProvider() {
-  return getProvider();
 }

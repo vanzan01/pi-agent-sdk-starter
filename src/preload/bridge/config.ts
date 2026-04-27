@@ -1,9 +1,7 @@
 import type { IpcRenderer } from 'electron';
 
-import type { ModelProvider } from '../../shared/core';
 import type {
   AppSettingsPayload,
-  ModelConfig,
   PiOAuthPromptRendererRequest
 } from '../../shared/types/electron-api';
 
@@ -35,19 +33,6 @@ export function createConfigBridge(ipcRenderer: IpcRenderer) {
       ipcRenderer.invoke('config:set-system-prompt-append', text),
     getDefaultSystemPromptAppend: () =>
       ipcRenderer.invoke('config:get-default-system-prompt-append'),
-    getProvider: () => ipcRenderer.invoke('config:get-provider'),
-    setProvider: (provider: ModelProvider) => ipcRenderer.invoke('config:set-provider', provider),
-    getGlmConfig: () => ipcRenderer.invoke('config:get-glm-config'),
-    setGlmApiKey: (apiKey: string | null) => ipcRenderer.invoke('config:set-glm-api-key', apiKey),
-    setGlmBaseUrl: (baseUrl: string | null) =>
-      ipcRenderer.invoke('config:set-glm-base-url', baseUrl),
-    getDefaultGlmBaseUrl: () => ipcRenderer.invoke('config:get-default-glm-base-url'),
-    getCodexModels: () => ipcRenderer.invoke('config:get-codex-models'),
-    setCodexModels: (models: ModelConfig) => ipcRenderer.invoke('config:set-codex-models', models),
-    getDefaultCodexModels: () => ipcRenderer.invoke('config:get-default-codex-models'),
-    getGlmModels: () => ipcRenderer.invoke('config:get-glm-models'),
-    setGlmModels: (models: ModelConfig) => ipcRenderer.invoke('config:set-glm-models', models),
-    getDefaultGlmModels: () => ipcRenderer.invoke('config:get-default-glm-models'),
     getPiModelsState: () => ipcRenderer.invoke('config:get-pi-models-state'),
     setPiProviderApiKey: (provider: string, apiKey: string | null) =>
       ipcRenderer.invoke('config:set-pi-provider-api-key', provider, apiKey),
@@ -72,13 +57,9 @@ export function createConfigBridge(ipcRenderer: IpcRenderer) {
     setAppSettings: (appId: string, settings: AppSettingsPayload) =>
       ipcRenderer.invoke('config:set-app-settings', appId, settings),
     getSkillStatus: (appId: string) => ipcRenderer.invoke('skills:get-status', appId),
-    onWorkspaceChanged: (
-      callback: (data: { workspaceDir: string; provider: ModelProvider }) => void
-    ) => {
-      const listener = (
-        _event: Electron.IpcRendererEvent,
-        data: { workspaceDir: string; provider: ModelProvider }
-      ) => callback(data);
+    onWorkspaceChanged: (callback: (data: { workspaceDir: string }) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, data: { workspaceDir: string }) =>
+        callback(data);
       ipcRenderer.on('config:workspace-changed', listener);
       return () => ipcRenderer.removeListener('config:workspace-changed', listener);
     },

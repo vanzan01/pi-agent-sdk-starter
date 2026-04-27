@@ -694,14 +694,15 @@ function generateRegistryContent(appIds: string[], manifests: AppManifest[]): st
   for (const appId of appIds) {
     const manifest = manifests.find((m) => m.id === appId);
     if (manifest) {
-      const varName = appId
-        .split(/[^a-zA-Z0-9]+/)
-        .filter(Boolean)
-        .map((part, index) => {
-          const lower = part.toLowerCase();
-          return index === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
-        })
-        .join('') + 'App';
+      const varName =
+        appId
+          .split(/[^a-zA-Z0-9]+/)
+          .filter(Boolean)
+          .map((part, index) => {
+            const lower = part.toLowerCase();
+            return index === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
+          })
+          .join('') + 'App';
       imports.push(`import { ${varName} } from './${appId}';`);
       appNames.push(varName);
     }
@@ -906,7 +907,7 @@ ${skillList}
    bun install
    \`\`\`
 
-2. Sign in to Codex OAuth with Pi (\`pi\`, then \`/login\`, then ChatGPT Plus/Pro), or configure GLM in Settings if this app uses GLM.
+2. Open Settings -> Models & Providers, authenticate a Pi SDK provider, and choose the fast/smart/deep model routing.
 
 3. Run in development:
    \`\`\`bash

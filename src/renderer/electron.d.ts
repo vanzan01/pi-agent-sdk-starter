@@ -55,11 +55,6 @@ export type {
   ToolResultComplete,
   ThinkingStart,
   ThinkingChunk,
-
-  // Model config types
-  ModelConfig,
-  ModelConfigResponse,
-  SetModelConfigResponse,
   ConfigStatusResponse,
   MergedConfigResponse,
 

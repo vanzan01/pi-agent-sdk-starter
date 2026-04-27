@@ -4,7 +4,7 @@ import { join } from 'path';
 import { config as dotenvConfig } from 'dotenv';
 
 import type { ThinkingLevel } from '../../shared/constants';
-import type { ChatModelPreference, ModelProvider } from '../../shared/core';
+import type { ChatModelPreference } from '../../shared/core';
 
 /**
  * Configuration schema for project configs.
@@ -12,32 +12,13 @@ import type { ChatModelPreference, ModelProvider } from '../../shared/core';
  *
  * All settings are stored in the project folder:
  * - .pi-sdk/config.json - Non-sensitive settings
- * - .env - API keys for optional non-Codex providers (GLM_API_KEY, etc.)
+ * - .env - App/domain API keys such as FINNHUB_API_KEY and PERPLEXITY_API_KEY
  */
 export interface ConfigSchema {
   // AI Configuration
   thinkingLevel?: ThinkingLevel;
   systemPromptAppend?: string;
   chatModelPreference?: ChatModelPreference;
-
-  // Provider settings (default: codex)
-  provider?: ModelProvider;
-  // Note: glmApiKey is stored in .env as GLM_API_KEY, not in config.json
-  glmBaseUrl?: string;
-
-  // Model IDs per provider (allows overriding SDK defaults)
-  // Codex defaults: gpt-5.4, gpt-5.4, gpt-5.5
-  codexModels?: {
-    fast?: string;
-    smart?: string;
-    deep?: string;
-  };
-  // GLM defaults: glm-5, glm-5.1, glm-5.1
-  glmModels?: {
-    fast?: string;
-    smart?: string;
-    deep?: string;
-  };
 
   // Generic Pi SDK provider/model references per speed tier.
   piModelPreferences?: Partial<Record<ChatModelPreference, PiModelReference>>;
@@ -201,15 +182,6 @@ function getEnvApiKeyWithSource(
 }
 
 /**
- * Gets the GLM API key with proper priority:
- * 1. process.env.GLM_API_KEY (highest - system env)
- * 2. Project .env file GLM_API_KEY
- */
-export function getGlmApiKeyWithSource(projectDir?: string | null): ConfigValue<string | null> {
-  return getEnvApiKeyWithSource('GLM_API_KEY', projectDir);
-}
-
-/**
  * Gets Finnhub API key from .env file.
  * Priority: system env FINNHUB_API_KEY > project .env FINNHUB_API_KEY
  */
@@ -344,10 +316,7 @@ export function getMergedConfig(projectDir?: string | null): {
     'thinkingLevel',
     'systemPromptAppend',
     'chatModelPreference',
-    'provider',
-    'glmBaseUrl',
-    'codexModels',
-    'glmModels',
+    'piModelPreferences',
     'debugMode'
   ];
 

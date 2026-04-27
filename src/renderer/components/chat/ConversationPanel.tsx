@@ -1,11 +1,12 @@
 import type { RefObject } from 'react';
 
-import MessageList from '@/components/MessageList';
 import ChatInput from '@/components/ChatInput';
-import type { PendingAttachment } from '@/hooks/useChatAttachments';
+import MessageList from '@/components/MessageList';
 import type { ContextWindowInfo } from '@/hooks/chat/useMessageStream';
+import type { PendingAttachment } from '@/hooks/useChatAttachments';
 import type { Message } from '@/types/chat';
-import type { ChatModelPreference, ModelProvider, ThinkingLevel } from '../../../shared/core';
+
+import type { ChatModelPreference, ThinkingLevel } from '../../../shared/core';
 
 interface ConversationPanelProps {
   messages: Message[];
@@ -29,9 +30,6 @@ interface ConversationPanelProps {
   thinkingLevel: ThinkingLevel;
   onThinkingLevelChange: (level: ThinkingLevel) => void;
   isThinkingLevelUpdating: boolean;
-  provider: ModelProvider;
-  onProviderChange: (provider: ModelProvider) => void;
-  isProviderUpdating: boolean;
   contextWindowInfo?: ContextWindowInfo | null;
 }
 
@@ -57,9 +55,6 @@ export function ConversationPanel({
   thinkingLevel,
   onThinkingLevelChange,
   isThinkingLevelUpdating,
-  provider,
-  onProviderChange,
-  isProviderUpdating,
   contextWindowInfo
 }: ConversationPanelProps) {
   return (
@@ -92,9 +87,6 @@ export function ConversationPanel({
           thinkingLevel={thinkingLevel}
           onThinkingLevelChange={onThinkingLevelChange}
           isThinkingLevelUpdating={isThinkingLevelUpdating}
-          provider={provider}
-          onProviderChange={onProviderChange}
-          isProviderUpdating={isProviderUpdating}
           contextWindowInfo={contextWindowInfo}
         />
       </div>

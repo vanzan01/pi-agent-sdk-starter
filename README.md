@@ -12,7 +12,7 @@
 This starter demonstrates how to build real desktop agent apps without mixing the agent runtime, provider routing, and UI shell into one hard-to-change layer.
 
 1. **Separate agent runtime from UI** - Pi SDK handles agents, tools, skills, streaming, state, and model routing.
-2. **Support provider flexibility** - Use Codex OAuth or OpenAI-compatible API providers such as GLM.
+2. **Support provider flexibility** - Configure Pi SDK OAuth and API-key providers from Settings.
 3. **Ship useful app patterns** - The demo app shows a multi-stage agent workflow with scoped skills.
 4. **Keep the starter practical** - Electron and React are the app shell, not the agent runtime.
 
@@ -52,7 +52,7 @@ Project-specific model/provider catalogs live with the project:
 <project>/.pi-sdk/config.json
 ```
 
-Until the `/models` flow is implemented, a fresh install will report missing provider credentials for Codex/OpenAI because the starter-owned SDK auth store is empty.
+On a fresh install, open Settings -> Models & Providers to authenticate a provider and choose the fast/smart/deep model routing.
 
 ## Project Structure
 
@@ -96,15 +96,14 @@ See [docs/BUILDING_APPS.md](docs/BUILDING_APPS.md) for the full guide.
 
 ## Providers
 
-The default provider path is Codex through Pi SDK OAuth. The starter also includes GLM/Z.AI as an OpenAI-compatible API-key provider example.
+Provider auth and model routing are configured through Settings using the Pi SDK provider/model registry.
 
 | Provider                   | Auth                                                                    |
 | -------------------------- | ----------------------------------------------------------------------- |
 | Codex                      | Pi SDK OAuth credentials in `~/.pi-sdk/auth.json`                       |
-| GLM/Z.AI                   | `GLM_API_KEY` in project `.env` or Settings                             |
 | Other compatible providers | Project `.pi-sdk/models.json` plus credentials in `~/.pi-sdk/auth.json` |
 
-Model IDs are configurable in Settings. Codex defaults use `gpt-5.4` for fast/smart and `gpt-5.5` for deep.
+Settings lets you choose provider/model pairs for the fast, smart, and deep tiers.
 
 ## Runtime Binaries
 

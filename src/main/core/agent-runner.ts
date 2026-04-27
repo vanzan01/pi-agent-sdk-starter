@@ -1,6 +1,7 @@
-import type { SDKUserMessage } from '../../shared/core';
 import type { BrowserWindow } from 'electron';
 
+import type { SDKUserMessage } from '../../shared/core';
+import { messageQueue } from '../lib/message-queue';
 import {
   getActiveAppId,
   isSessionActive,
@@ -8,26 +9,9 @@ import {
   startStreamingSession,
   waitForSessionReady
 } from '../lib/pi-session';
-import { getGlmApiKey, getProvider } from '../lib/config';
-import { messageQueue } from '../lib/message-queue';
 import { buildSystemPromptAppend } from './ai-client';
 import { buildAppContext } from './app-context';
 import type { AgentConversation, AgentResponse } from './types';
-
-async function validateProvider(): Promise<{ success: boolean; error?: string }> {
-  const currentProvider = getProvider();
-  if (currentProvider === 'glm') {
-    const glmApiKey = getGlmApiKey();
-    if (!glmApiKey) {
-      return {
-        success: false,
-        error:
-          'Z.AI GLM provider is selected but no API key is configured. Please add your GLM API key in Settings, or switch to Codex provider.'
-      };
-    }
-  }
-  return { success: true };
-}
 
 async function ensureAppContext(appId: string): Promise<ReturnType<typeof buildAppContext>> {
   // Check if we need to reset BEFORE calling buildAppContext
@@ -35,7 +19,9 @@ async function ensureAppContext(appId: string): Promise<ReturnType<typeof buildA
   const currentAppId = getActiveAppId();
   const targetAppId = appId || 'chat';
   if (currentAppId !== targetAppId && isSessionActive()) {
-    console.log(`[agent-runner] App switch detected: "${currentAppId}" -> "${targetAppId}", resetting session`);
+    console.log(
+      `[agent-runner] App switch detected: "${currentAppId}" -> "${targetAppId}", resetting session`
+    );
     await resetSession();
   }
 
@@ -49,11 +35,6 @@ export async function runAgentMessage(
   userMessage: SDKUserMessage['message'],
   mainWindow: BrowserWindow | null
 ): Promise<{ success: boolean; error?: string; allowedTools?: string[] }> {
-  const providerCheck = await validateProvider();
-  if (!providerCheck.success) {
-    return providerCheck;
-  }
-
   const ctx = await ensureAppContext(appId || 'chat');
 
   try {
@@ -84,11 +65,6 @@ export async function runAgentConversation(
   conversation: AgentConversation,
   mainWindow: BrowserWindow | null
 ): Promise<AgentResponse> {
-  const providerCheck = await validateProvider();
-  if (!providerCheck.success) {
-    return { success: false, error: providerCheck.error || 'Provider not ready' };
-  }
-
   const ctx = await ensureAppContext(appId);
   const systemAppend = buildSystemPromptAppend(ctx.systemPrompt, conversation.systemPrompt);
 
@@ -100,7 +76,13 @@ export async function runAgentConversation(
     // Start streaming session (don't await - it runs until session ends)
     // sessionReadyPromise is created synchronously at the start of startStreamingSession
     // so waitForSessionReady() will have something to wait on
-    startStreamingSession(mainWindow, effectiveTools, systemAppend, ctx.agents, conversation.model).catch((error) => {
+    startStreamingSession(
+      mainWindow,
+      effectiveTools,
+      systemAppend,
+      ctx.agents,
+      conversation.model
+    ).catch((error) => {
       console.error('Failed to start streaming session:', error);
     });
     await waitForSessionReady();

@@ -8,14 +8,9 @@
 import type {
   ChatModelPreference,
   GetChatModelPreferenceResponse,
-  GetGlmConfigResponse,
-  GetProviderResponse,
-  ModelProvider,
   SendMessagePayload,
   SendMessageResponse,
-  SetChatModelPreferenceResponse,
-  SetGlmConfigResponse,
-  SetProviderResponse
+  SetChatModelPreferenceResponse
 } from '../core';
 
 // Re-export for convenience
@@ -385,32 +380,6 @@ export interface PiOAuthPromptRendererRequest {
   allowEmpty?: boolean;
 }
 
-export interface ModelConfig {
-  fast?: string;
-  smart?: string;
-  deep?: string;
-}
-
-export interface ModelConfigResponse {
-  models: {
-    fast: string;
-    smart: string;
-    deep: string;
-  };
-  source: ConfigSource;
-}
-
-export interface SetModelConfigResponse {
-  success: boolean;
-  models?: {
-    fast: string;
-    smart: string;
-    deep: string;
-  };
-  source?: ConfigSource;
-  error?: string;
-}
-
 export interface ConfigStatusResponse {
   hasProjectConfig: boolean;
   projectConfigPath: string | null;
@@ -545,20 +514,6 @@ export interface ConfigBridge {
     error?: string;
   }>;
   getDefaultSystemPromptAppend: () => Promise<{ text: string }>;
-  getProvider: () => Promise<GetProviderResponse>;
-  setProvider: (provider: ModelProvider) => Promise<SetProviderResponse>;
-  getGlmConfig: () => Promise<GetGlmConfigResponse>;
-  setGlmApiKey: (apiKey: string | null) => Promise<SetGlmConfigResponse>;
-  setGlmBaseUrl: (baseUrl: string | null) => Promise<SetGlmConfigResponse>;
-  getDefaultGlmBaseUrl: () => Promise<{ baseUrl: string }>;
-  getCodexModels: () => Promise<ModelConfigResponse>;
-  setCodexModels: (models: ModelConfig) => Promise<SetModelConfigResponse>;
-  getDefaultCodexModels: () => Promise<{
-    models: { fast: string; smart: string; deep: string };
-  }>;
-  getGlmModels: () => Promise<ModelConfigResponse>;
-  setGlmModels: (models: ModelConfig) => Promise<SetModelConfigResponse>;
-  getDefaultGlmModels: () => Promise<{ models: { fast: string; smart: string; deep: string } }>;
   getPiModelsState: () => Promise<PiModelsState>;
   setPiProviderApiKey: (
     provider: string,
@@ -579,9 +534,7 @@ export interface ConfigBridge {
   getAppSettings: (appId: string) => Promise<AppSettingsResponse>;
   setAppSettings: (appId: string, settings: AppSettingsPayload) => Promise<AppSettingsResponse>;
   getSkillStatus: (appId: string) => Promise<SkillStatusResponse>;
-  onWorkspaceChanged: (
-    callback: (data: { workspaceDir: string; provider: ModelProvider }) => void
-  ) => () => void;
+  onWorkspaceChanged: (callback: (data: { workspaceDir: string }) => void) => () => void;
   onFloatingNavChanged: (callback: (data: { enabled: boolean }) => void) => () => void;
 }
 

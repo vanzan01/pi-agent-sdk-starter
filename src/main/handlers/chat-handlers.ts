@@ -1,19 +1,20 @@
 import { randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
 import { join, relative } from 'path';
-import type { SDKUserMessage } from '../../shared/core';
 import { ipcMain, type BrowserWindow } from 'electron';
 
-import { ATTACHMENTS_DIR_NAME, MAX_ATTACHMENT_BYTES } from '../../shared/core';
 import type {
   ChatModelPreference,
   SavedAttachmentInfo,
+  SDKUserMessage,
   SendMessagePayload,
   SerializedAttachmentPayload
 } from '../../shared/core';
+import { ATTACHMENTS_DIR_NAME, MAX_ATTACHMENT_BYTES } from '../../shared/core';
 import { runAgentConversation, runAgentMessage } from '../core/agent-runner';
 import { buildAppContext } from '../core/app-context';
 import type { AgentConversation } from '../core/types';
+import { getWorkspaceDir } from '../lib/config';
 import {
   getCurrentModelPreference,
   interruptCurrentResponse,
@@ -21,7 +22,6 @@ import {
   runSingleAgentCall,
   setChatModelPreference
 } from '../lib/pi-session';
-import { getGlmApiKey, getProvider, getWorkspaceDir } from '../lib/config';
 
 export function registerChatHandlers(getMainWindow: () => BrowserWindow | null): void {
   const sendMessage = async (
@@ -31,19 +31,6 @@ export function registerChatHandlers(getMainWindow: () => BrowserWindow | null):
     | { success: true; attachments: SavedAttachmentInfo[] }
     | { success: false; error: string; attachments?: SavedAttachmentInfo[] }
   > => {
-    // Validate provider configuration BEFORE starting session
-    const currentProvider = getProvider();
-    if (currentProvider === 'glm') {
-      const glmApiKey = getGlmApiKey();
-      if (!glmApiKey) {
-        return {
-          success: false,
-          error:
-            'Z.AI GLM provider is selected but no API key is configured. Please add your GLM API key in Settings, or switch to Codex provider.'
-        };
-      }
-    }
-
     const normalizedPayload = payload ?? { text: '', attachments: [] };
     const text = normalizedPayload.text?.trim() ?? '';
     const attachments = normalizedPayload.attachments ?? [];
@@ -224,8 +211,7 @@ function resolveAttachmentPaths(attachment: SavedAttachmentInfo): {
   }
 
   // Ensure path starts with ./ for relative paths
-  const readTarget =
-    relativeSegment.startsWith('.') ? relativeSegment : `./${relativeSegment}`;
+  const readTarget = relativeSegment.startsWith('.') ? relativeSegment : `./${relativeSegment}`;
 
   return {
     readTarget,

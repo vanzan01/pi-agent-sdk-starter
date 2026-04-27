@@ -11,10 +11,6 @@ export interface SuccessResponse {
 
 export type ChatModelPreference = 'fast' | 'smart' | 'deep';
 
-export type ModelProvider = 'codex' | 'glm';
-
-export const DEFAULT_GLM_BASE_URL = 'https://api.z.ai/api/coding/paas/v4';
-
 export interface SerializedAttachmentPayload {
   name: string;
   mimeType: string;
@@ -63,25 +59,4 @@ export interface GetSystemPromptAppendResponse {
 export interface SetSystemPromptAppendResponse extends SuccessResponse {
   text: string;
   isDefault: boolean;
-}
-
-export interface GetProviderResponse {
-  provider: ModelProvider;
-  source: 'default' | 'project' | 'env';
-}
-
-export interface SetProviderResponse extends SuccessResponse {
-  provider: ModelProvider;
-}
-
-export interface GetGlmConfigResponse {
-  apiKey: string | null;
-  baseUrl: string;
-  apiKeySource: 'default' | 'project' | 'env';
-  baseUrlSource: 'default' | 'project' | 'env';
-}
-
-export interface SetGlmConfigResponse extends SuccessResponse {
-  apiKey: string | null;
-  baseUrl: string;
 }

@@ -37,9 +37,9 @@ Choose the Codex/OpenAI login path. Then run:
 bun run test:bypass-auth
 ```
 
-## GLM Provider Fails
+## Provider Auth Fails
 
-Set `GLM_API_KEY` in the project `.env` file or through Settings. If you changed provider settings while the app was running, start a new session so the Pi SDK runner uses the latest configuration.
+Open Settings -> Models & Providers, authenticate the provider with OAuth or an API key, then select models for the fast/smart/deep tiers. If you changed provider settings while the app was running, start a new session so the Pi SDK runner uses the latest configuration.
 
 ## App Cannot Find Skills Or Agents
 
