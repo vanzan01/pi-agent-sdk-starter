@@ -1,12 +1,15 @@
 import { mkdirSync } from 'fs';
+import { homedir } from 'os';
 import { join } from 'path';
 
-import { buildEmbeddedPiAgentPaths } from '../src/main/lib/pi-runtime-paths';
+import { buildPiRuntimePaths } from '../src/main/lib/pi-runtime-paths';
 
 export function getPiSdkTestAgentPaths() {
-  const userDataPath =
-    process.env.PI_STARTER_TEST_USER_DATA_DIR ?? join(process.cwd(), '.pi-sdk', 'test-user-data');
-  const paths = buildEmbeddedPiAgentPaths(userDataPath);
-  mkdirSync(paths.agentDir, { recursive: true });
+  const homePath = process.env.PI_STARTER_TEST_HOME_DIR ?? homedir();
+  const projectPath =
+    process.env.PI_STARTER_TEST_PROJECT_DIR ?? join(process.cwd(), '.pi-sdk', 'test-project');
+  const paths = buildPiRuntimePaths(homePath, projectPath);
+  mkdirSync(paths.sdkDir, { recursive: true });
+  mkdirSync(paths.projectConfigDir, { recursive: true });
   return paths;
 }

@@ -33,7 +33,7 @@ if (
 
 const loader = new DefaultResourceLoader({
   cwd: process.cwd(),
-  agentDir: paths.agentDir,
+  agentDir: paths.projectConfigDir,
   systemPromptOverride: () => 'Reply exactly as requested. Do not use tools.'
 });
 await loader.reload();
@@ -43,7 +43,7 @@ const { session } = await createAgentSession({
   model,
   authStorage,
   modelRegistry,
-  agentDir: paths.agentDir,
+  agentDir: paths.projectConfigDir,
   resourceLoader: loader,
   sessionManager: SessionManager.inMemory(),
   tools: []

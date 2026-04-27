@@ -43,7 +43,7 @@ import {
   createEmbeddedPiAuthStorage,
   createEmbeddedPiModelRegistry,
   createEmbeddedPiSettingsManager,
-  ensureEmbeddedPiAgentPaths
+  ensurePiRuntimePaths
 } from './pi-runtime';
 
 const FAST_MODEL_ID = 'gpt-5.4';
@@ -208,7 +208,7 @@ function buildIdentityGuard(provider: string, modelId: string): string {
 
 async function createPiSession(systemPrompt: string, modelId: string): Promise<AgentSession> {
   const cwd = getWorkspaceDir();
-  const piPaths = ensureEmbeddedPiAgentPaths();
+  const piPaths = ensurePiRuntimePaths(cwd);
   const authStorage = createEmbeddedPiAuthStorage();
   const provider = getProvider() === 'glm' ? GLM_PROVIDER : CODEX_PROVIDER;
   const effectiveModelId = provider === GLM_PROVIDER ? modelId.toLowerCase() : modelId;
@@ -233,7 +233,7 @@ async function createPiSession(systemPrompt: string, modelId: string): Promise<A
 
   const resourceLoader = new DefaultResourceLoader({
     cwd,
-    agentDir: piPaths.agentDir,
+    agentDir: piPaths.projectConfigDir,
     systemPromptOverride: () =>
       [
         buildIdentityGuard(provider, effectiveModelId),
@@ -567,7 +567,7 @@ export async function runSingleAgentCall(
     console.error('[SingleAgent] Error:', error);
     return {
       success: false,
-      error: normalizePiSdkError(error, 'Unknown error', ensureEmbeddedPiAgentPaths())
+      error: normalizePiSdkError(error, 'Unknown error', ensurePiRuntimePaths())
     };
   } finally {
     unsubscribe?.();
@@ -678,7 +678,7 @@ export async function startStreamingSession(
     const normalizedError = normalizePiSdkError(
       error,
       'Unknown error occurred',
-      ensureEmbeddedPiAgentPaths()
+      ensurePiRuntimePaths()
     );
     resolveSessionReady?.();
     resolveSessionReady = null;

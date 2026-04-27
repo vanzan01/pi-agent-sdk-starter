@@ -22,7 +22,8 @@ interface DiagnosticMetadata {
   v8Version: string;
   nodeVersion: string;
   piSdkVersion: string;
-  piAgentDir: string;
+  piSdkDir: string;
+  piProjectConfigDir: string;
   piAuthPath: string;
   piModelsPath: string;
   piSettingsPath: string;
@@ -160,7 +161,11 @@ export function DebugSettingsPanel({
                 <DebugInfoRow label="V8 Version" value={diagnosticMetadata.v8Version} />
                 <DebugInfoRow label="Node.js Version" value={diagnosticMetadata.nodeVersion} />
                 <DebugInfoRow label="Pi SDK Version" value={diagnosticMetadata.piSdkVersion} />
-                <DebugInfoRow label="Pi Agent Directory" value={diagnosticMetadata.piAgentDir} />
+                <DebugInfoRow label="Pi SDK Directory" value={diagnosticMetadata.piSdkDir} />
+                <DebugInfoRow
+                  label="Pi Project Directory"
+                  value={diagnosticMetadata.piProjectConfigDir}
+                />
                 <DebugInfoRow label="Pi Auth File" value={diagnosticMetadata.piAuthPath} />
                 <DebugInfoRow label="Pi Models File" value={diagnosticMetadata.piModelsPath} />
                 <DebugInfoRow label="Pi Settings File" value={diagnosticMetadata.piSettingsPath} />

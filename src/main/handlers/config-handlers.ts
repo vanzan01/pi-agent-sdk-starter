@@ -44,7 +44,7 @@ import {
   type ConfigSource,
   type ModelConfig
 } from '../lib/config';
-import { ensureEmbeddedPiAgentPaths } from '../lib/pi-runtime';
+import { ensurePiRuntimePaths } from '../lib/pi-runtime';
 import { resetSession } from '../lib/pi-session';
 
 const requireModule = createRequire(import.meta.url);
@@ -274,7 +274,7 @@ export function registerConfigHandlers(): void {
 
   // Get app diagnostic metadata (versions, platform info, etc.)
   ipcMain.handle('config:get-diagnostic-metadata', () => {
-    const piPaths = ensureEmbeddedPiAgentPaths();
+    const piPaths = ensurePiRuntimePaths(getWorkspaceDir());
     return {
       appVersion: app.getVersion(),
       electronVersion: process.versions.electron,
@@ -282,7 +282,8 @@ export function registerConfigHandlers(): void {
       v8Version: process.versions.v8,
       nodeVersion: process.versions.node,
       piSdkVersion: getPiSdkVersion(),
-      piAgentDir: piPaths.agentDir,
+      piSdkDir: piPaths.sdkDir,
+      piProjectConfigDir: piPaths.projectConfigDir,
       piAuthPath: piPaths.authPath,
       piModelsPath: piPaths.modelsPath,
       piSettingsPath: piPaths.settingsPath,

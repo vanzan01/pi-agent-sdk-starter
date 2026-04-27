@@ -1,23 +1,32 @@
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
-import { homedir, tmpdir } from 'os';
+import { tmpdir } from 'os';
 import { join, relative } from 'path';
 import { AuthStorage, ModelRegistry } from '@mariozechner/pi-coding-agent';
 
-import { buildEmbeddedPiAgentPaths } from '../src/main/lib/pi-runtime-paths';
+import { buildPiRuntimePaths } from '../src/main/lib/pi-runtime-paths';
 
-const userDataPath = join(tmpdir(), `pi-sdk-starter-runtime-${process.pid}-${Date.now()}`);
-const paths = buildEmbeddedPiAgentPaths(userDataPath);
-const globalPiAgentDir = join(homedir(), '.pi', 'agent');
+const rootPath = join(tmpdir(), `pi-sdk-starter-runtime-${process.pid}-${Date.now()}`);
+const homePath = join(rootPath, 'home');
+const projectPath = join(rootPath, 'project');
+const paths = buildPiRuntimePaths(homePath, projectPath);
+const globalPiAgentDir = join(homePath, '.pi', 'agent');
 
-if (!paths.agentDir.startsWith(userDataPath)) {
-  throw new Error(`Embedded Pi agent dir escaped user data path: ${paths.agentDir}`);
+if (paths.authPath !== join(homePath, '.pi-sdk', 'auth.json')) {
+  throw new Error(`Expected SDK auth path under ~/.pi-sdk. Received: ${paths.authPath}`);
 }
 
-if (!relative(globalPiAgentDir, paths.agentDir).startsWith('..')) {
-  throw new Error(`Embedded Pi agent dir must not use global ~/.pi/agent: ${paths.agentDir}`);
+if (paths.modelsPath !== join(projectPath, '.pi-sdk', 'models.json')) {
+  throw new Error(
+    `Expected project models path under <project>/.pi-sdk. Received: ${paths.modelsPath}`
+  );
 }
 
-mkdirSync(paths.agentDir, { recursive: true });
+if (!relative(globalPiAgentDir, paths.authPath).startsWith('..')) {
+  throw new Error(`SDK auth path must not use global ~/.pi/agent: ${paths.authPath}`);
+}
+
+mkdirSync(paths.sdkDir, { recursive: true });
+mkdirSync(paths.projectConfigDir, { recursive: true });
 
 writeFileSync(
   paths.modelsPath,
@@ -72,4 +81,4 @@ if (!existsSync(paths.authPath)) {
   throw new Error('Expected AuthStorage to create embedded auth.json');
 }
 
-console.log(`PASS: embedded Pi runtime paths are self-contained at ${paths.agentDir}`);
+console.log(`PASS: Pi SDK auth and project model paths are split correctly.`);

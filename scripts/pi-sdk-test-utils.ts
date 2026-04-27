@@ -23,7 +23,7 @@ export async function runPiCodexPrompt(
 
   const loader = new DefaultResourceLoader({
     cwd: process.cwd(),
-    agentDir: paths.agentDir,
+    agentDir: paths.projectConfigDir,
     systemPromptOverride: () => systemPrompt
   });
   await loader.reload();
@@ -33,7 +33,7 @@ export async function runPiCodexPrompt(
     model,
     authStorage,
     modelRegistry,
-    agentDir: paths.agentDir,
+    agentDir: paths.projectConfigDir,
     resourceLoader: loader,
     sessionManager: SessionManager.inMemory(),
     tools: []

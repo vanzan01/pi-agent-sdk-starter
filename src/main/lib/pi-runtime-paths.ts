@@ -1,20 +1,38 @@
 import { join } from 'path';
 
-const PI_AGENT_DIR_NAME = 'pi-agent';
-
 export interface EmbeddedPiAgentPaths {
-  agentDir: string;
+  sdkDir: string;
   authPath: string;
+}
+
+export interface ProjectPiRuntimePaths {
+  projectConfigDir: string;
   modelsPath: string;
   settingsPath: string;
 }
 
-export function buildEmbeddedPiAgentPaths(userDataPath: string): EmbeddedPiAgentPaths {
-  const agentDir = join(userDataPath, PI_AGENT_DIR_NAME);
+export interface PiRuntimePaths extends EmbeddedPiAgentPaths, ProjectPiRuntimePaths {}
+
+export function buildEmbeddedPiAgentPaths(homePath: string): EmbeddedPiAgentPaths {
+  const sdkDir = join(homePath, '.pi-sdk');
   return {
-    agentDir,
-    authPath: join(agentDir, 'auth.json'),
-    modelsPath: join(agentDir, 'models.json'),
-    settingsPath: join(agentDir, 'settings.json')
+    sdkDir,
+    authPath: join(sdkDir, 'auth.json')
+  };
+}
+
+export function buildProjectPiRuntimePaths(projectDir: string): ProjectPiRuntimePaths {
+  const projectConfigDir = join(projectDir, '.pi-sdk');
+  return {
+    projectConfigDir,
+    modelsPath: join(projectConfigDir, 'models.json'),
+    settingsPath: join(projectConfigDir, 'settings.json')
+  };
+}
+
+export function buildPiRuntimePaths(homePath: string, projectDir: string): PiRuntimePaths {
+  return {
+    ...buildEmbeddedPiAgentPaths(homePath),
+    ...buildProjectPiRuntimePaths(projectDir)
   };
 }

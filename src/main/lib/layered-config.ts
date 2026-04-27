@@ -68,6 +68,7 @@ export interface ConfigValue<T> {
 // Project config directory name
 const PROJECT_CONFIG_DIR = '.pi-sdk';
 const PROJECT_CONFIG_FILE = 'config.json';
+const PROJECT_MODELS_FILE = 'models.json';
 
 // Cache for current project directory
 let currentProjectDir: string | null = null;
@@ -212,7 +213,9 @@ export function getFinnhubApiKeyWithSource(projectDir?: string | null): ConfigVa
  * Gets Perplexity API key from .env file.
  * Priority: system env PERPLEXITY_API_KEY > project .env PERPLEXITY_API_KEY
  */
-export function getPerplexityApiKeyWithSource(projectDir?: string | null): ConfigValue<string | null> {
+export function getPerplexityApiKeyWithSource(
+  projectDir?: string | null
+): ConfigValue<string | null> {
   return getEnvApiKeyWithSource('PERPLEXITY_API_KEY', projectDir);
 }
 
@@ -380,7 +383,7 @@ export async function initProjectConfig(projectDir: string): Promise<void> {
 }
 
 /**
- * Ensures .pi-sdk/config.json is in .gitignore.
+ * Ensures .pi-sdk runtime config is in .gitignore.
  * Only modifies .gitignore if the project is a git repo.
  */
 async function ensureGitignore(projectDir: string): Promise<void> {
@@ -390,25 +393,22 @@ async function ensureGitignore(projectDir: string): Promise<void> {
   }
 
   const gitignorePath = join(projectDir, '.gitignore');
-  const entriesToAdd = [
-    `# Pi SDK Starter Kit config (contains user settings)`,
-    `${PROJECT_CONFIG_DIR}/${PROJECT_CONFIG_FILE}`,
-    ``
-  ];
-
   try {
     let gitignoreContent = '';
     if (existsSync(gitignorePath)) {
       gitignoreContent = readFileSync(gitignorePath, 'utf-8');
     }
 
-    // Check if already has the entry
-    if (gitignoreContent.includes(`${PROJECT_CONFIG_DIR}/${PROJECT_CONFIG_FILE}`)) {
+    const runtimeEntries = [
+      `${PROJECT_CONFIG_DIR}/${PROJECT_CONFIG_FILE}`,
+      `${PROJECT_CONFIG_DIR}/${PROJECT_MODELS_FILE}`
+    ];
+    const missingEntries = runtimeEntries.filter((entry) => !gitignoreContent.includes(entry));
+    if (missingEntries.length === 0) {
       return;
     }
 
-    // Add entries
-    const newContent = entriesToAdd.join('\n');
+    const newContent = [`# Pi SDK Starter Kit config`, ...missingEntries, ``].join('\n');
     if (gitignoreContent && !gitignoreContent.endsWith('\n')) {
       appendFileSync(gitignorePath, '\n' + newContent);
     } else {

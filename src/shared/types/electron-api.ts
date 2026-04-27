@@ -71,7 +71,8 @@ export interface DiagnosticMetadataResponse {
   v8Version: string;
   nodeVersion: string;
   piSdkVersion: string;
-  piAgentDir: string;
+  piSdkDir: string;
+  piProjectConfigDir: string;
   piAuthPath: string;
   piModelsPath: string;
   piSettingsPath: string;

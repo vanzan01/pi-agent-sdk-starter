@@ -2,9 +2,10 @@ import { tmpdir } from 'os';
 import { join } from 'path';
 
 import { normalizePiSdkError } from '../src/main/lib/pi-error-normalizer';
-import { buildEmbeddedPiAgentPaths } from '../src/main/lib/pi-runtime-paths';
+import { buildPiRuntimePaths } from '../src/main/lib/pi-runtime-paths';
 
-const paths = buildEmbeddedPiAgentPaths(join(tmpdir(), 'pi-sdk-starter-normalizer-test'));
+const rootPath = join(tmpdir(), 'pi-sdk-starter-normalizer-test');
+const paths = buildPiRuntimePaths(join(rootPath, 'home'), join(rootPath, 'project'));
 const rawError = new Error(
   [
     'No API key found for openai-codex.',

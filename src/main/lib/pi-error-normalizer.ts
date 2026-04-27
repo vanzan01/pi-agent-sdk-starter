@@ -1,4 +1,4 @@
-import type { EmbeddedPiAgentPaths } from './pi-runtime-paths';
+import type { PiRuntimePaths } from './pi-runtime-paths';
 
 const PI_LOGIN_GUIDANCE_MARKER = 'Use /login to log into a provider via OAuth or API key.';
 
@@ -13,7 +13,7 @@ function getErrorText(error: unknown, fallback: string): string {
 export function normalizePiSdkError(
   error: unknown,
   fallback: string,
-  paths: EmbeddedPiAgentPaths
+  paths: PiRuntimePaths
 ): string {
   const message = getErrorText(error, fallback);
 
