@@ -8,16 +8,14 @@ import {
   THINKING_PRESETS,
   type ThinkingLevel
 } from '../../shared/constants';
-import type { ChatModelPreference, ModelProvider } from '../../shared/core';
-import { DEFAULT_GLM_BASE_URL } from '../../shared/core';
+import type { ChatModelPreference } from '../../shared/core';
 import {
   getConfigStatus,
   getConfigValue,
   getCurrentProjectDir,
   getFinnhubApiKeyWithSource as getFinnhubApiKeyWithSourceFromEnv,
-  getPerplexityApiKeyWithSource as getPerplexityApiKeyWithSourceFromEnv,
-  getGlmApiKeyWithSource as getGlmApiKeyWithSourceFromEnv,
   getMergedConfig,
+  getPerplexityApiKeyWithSource as getPerplexityApiKeyWithSourceFromEnv,
   hasProjectConfig,
   initProjectConfig,
   loadProjectConfig,
@@ -27,7 +25,8 @@ import {
   setEnvValue,
   type ConfigSchema,
   type ConfigSource,
-  type ConfigValue
+  type ConfigValue,
+  type PiModelReference
 } from './layered-config';
 
 // Re-export layered config utilities for external use
@@ -252,9 +251,6 @@ export function getThinkingLevelWithSource(): ConfigValue<ThinkingLevel> {
 }
 
 export function getMaxThinkingTokens(): number {
-  if (getProvider() === 'glm') {
-    return 0;
-  }
   const level = getThinkingLevel();
   return THINKING_PRESETS[level].tokens;
 }
@@ -314,66 +310,6 @@ export async function setAppSettings(appId: string, settings: AppSettings): Prom
   await setConfigValue('appSettings', { ...existing, [appId]: normalized });
 }
 
-// ============================================================================
-// Model Provider Configuration
-// ============================================================================
-
-const DEFAULT_PROVIDER: ModelProvider = 'codex';
-
-/**
- * Gets the current model provider.
- */
-function normalizeProvider(provider: unknown): ModelProvider {
-  return provider === 'glm' ? 'glm' : 'codex';
-}
-
-export function getProvider(): ModelProvider {
-  const result = getConfigValue('provider', DEFAULT_PROVIDER);
-  return normalizeProvider(result.value);
-}
-
-/**
- * Gets the current model provider with source information.
- */
-export function getProviderWithSource(): ConfigValue<ModelProvider> {
-  const result = getConfigValue('provider', DEFAULT_PROVIDER);
-  return {
-    value: normalizeProvider(result.value),
-    source: result.source
-  };
-}
-
-/**
- * Sets the model provider to project config.
- */
-export async function setProvider(provider: ModelProvider): Promise<void> {
-  await setConfigValue('provider', provider);
-}
-
-/**
- * Gets GLM API key from .env file.
- * Priority: system env GLM_API_KEY > project .env GLM_API_KEY
- */
-export function getGlmApiKey(): string | null {
-  const result = getGlmApiKeyWithSourceFromEnv();
-  return result.value;
-}
-
-/**
- * Gets GLM API key with source information.
- * Priority: system env GLM_API_KEY > project .env GLM_API_KEY
- */
-export function getGlmApiKeyWithSource(): ConfigValue<string | null> {
-  return getGlmApiKeyWithSourceFromEnv();
-}
-
-/**
- * Sets GLM API key to project .env file.
- */
-export function setGlmApiKey(apiKey: string | null): void {
-  setEnvValue('GLM_API_KEY', apiKey);
-}
-
 /**
  * Gets Finnhub API key from .env file.
  * Priority: system env FINNHUB_API_KEY > project .env FINNHUB_API_KEY
@@ -406,150 +342,31 @@ export function setPerplexityApiKey(apiKey: string | null): void {
   setEnvValue('PERPLEXITY_API_KEY', apiKey);
 }
 
-/**
- * Gets GLM base URL from project config.
- */
-export function getGlmBaseUrl(): string {
-  const result = getConfigValue('glmBaseUrl', DEFAULT_GLM_BASE_URL);
-  return result.value;
-}
-
-/**
- * Gets GLM base URL with source information.
- */
-export function getGlmBaseUrlWithSource(): ConfigValue<string> {
-  return getConfigValue('glmBaseUrl', DEFAULT_GLM_BASE_URL);
-}
-
-/**
- * Sets GLM base URL to project config.
- */
-export async function setGlmBaseUrl(baseUrl: string | null): Promise<void> {
-  // If null or default, clear the setting
-  if (!baseUrl || baseUrl === DEFAULT_GLM_BASE_URL) {
-    await setConfigValue('glmBaseUrl', null);
-  } else {
-    await setConfigValue('glmBaseUrl', baseUrl);
-  }
-}
-
 // ============================================================================
-// Model IDs Configuration
+// Pi SDK Model Routing
 // ============================================================================
 
 // Default model IDs for each provider — use full model IDs, not aliases
-export const DEFAULT_CODEX_MODELS = {
-  fast: 'gpt-5.4',
-  smart: 'gpt-5.4',
-  deep: 'gpt-5.5'
-} as const;
-
-export const DEFAULT_GLM_MODELS = {
-  fast: 'glm-5',
-  smart: 'glm-5.1',
-  deep: 'glm-5.1'
-} as const;
-
-// Type for model slots
-export type ModelSlot = 'fast' | 'smart' | 'deep';
-export type ModelConfig = { fast?: string; smart?: string; deep?: string };
-
-/**
- * Merges user config with defaults, falling back to defaults for missing values.
- */
-function mergeModelsWithDefaults(
-  config: ModelConfig,
-  defaults: Required<ModelConfig>
-): Required<ModelConfig> {
-  return {
-    fast: config.fast || defaults.fast,
-    smart: config.smart || defaults.smart,
-    deep: config.deep || defaults.deep
-  };
+export function getPiModelPreferences(): Partial<Record<ChatModelPreference, PiModelReference>> {
+  const result = getConfigValue('piModelPreferences', {});
+  return result.value as Partial<Record<ChatModelPreference, PiModelReference>>;
 }
 
-/**
- * Filters out default values, keeping only overridden settings.
- */
-function filterNonDefaultModels(
-  models: ModelConfig,
-  defaults: Required<ModelConfig>
-): ModelConfig {
-  const result: ModelConfig = {};
-  if (models.fast && models.fast !== defaults.fast) {
-    result.fast = models.fast;
-  }
-  if (models.smart && models.smart !== defaults.smart) {
-    result.smart = models.smart;
-  }
-  if (models.deep && models.deep !== defaults.deep) {
-    result.deep = models.deep;
-  }
-  return result;
+export function getPiModelPreference(preference: ChatModelPreference): PiModelReference | null {
+  return getPiModelPreferences()[preference] ?? null;
 }
 
-/**
- * Gets the Codex model IDs from config.
- * Returns configured values merged with defaults.
- */
-export function getCodexModels(): Required<ModelConfig> {
-  const result = getConfigValue('codexModels', DEFAULT_CODEX_MODELS);
-  return mergeModelsWithDefaults(result.value as ModelConfig, DEFAULT_CODEX_MODELS);
-}
-
-/**
- * Gets the Codex model IDs with source information.
- */
-export function getCodexModelsWithSource(): ConfigValue<Required<ModelConfig>> {
-  const result = getConfigValue('codexModels', DEFAULT_CODEX_MODELS);
-  return {
-    value: mergeModelsWithDefaults(result.value as ModelConfig, DEFAULT_CODEX_MODELS),
-    source: result.source
-  };
-}
-
-/**
- * Sets Codex model IDs to project config.
- */
-export async function setCodexModels(models: ModelConfig): Promise<void> {
-  const toStore = filterNonDefaultModels(models, DEFAULT_CODEX_MODELS);
-  if (Object.keys(toStore).length === 0) {
-    await setConfigValue('codexModels', null);
+export async function setPiModelPreference(
+  preference: ChatModelPreference,
+  model: PiModelReference | null
+): Promise<void> {
+  const current = getPiModelPreferences();
+  if (model) {
+    current[preference] = model;
   } else {
-    await setConfigValue('codexModels', toStore);
+    delete current[preference];
   }
-}
-
-/**
- * Gets the GLM model IDs from config.
- * Returns configured values merged with defaults.
- */
-export function getGlmModels(): Required<ModelConfig> {
-  const result = getConfigValue('glmModels', DEFAULT_GLM_MODELS);
-  return mergeModelsWithDefaults(result.value as ModelConfig, DEFAULT_GLM_MODELS);
-}
-
-/**
- * Gets the GLM model IDs with source information.
- */
-export function getGlmModelsWithSource(): ConfigValue<Required<ModelConfig>> {
-  const result = getConfigValue('glmModels', DEFAULT_GLM_MODELS);
-  return {
-    value: mergeModelsWithDefaults(result.value as ModelConfig, DEFAULT_GLM_MODELS),
-    source: result.source
-  };
-}
-
-/**
- * Sets GLM model IDs to project config.
- */
-export async function setGlmModels(models: ModelConfig): Promise<void> {
-  const toStore = filterNonDefaultModels(models, DEFAULT_GLM_MODELS);
-  if (Object.keys(toStore).length === 0) {
-    await setConfigValue('glmModels', null);
-  } else {
-    await setConfigValue('glmModels', toStore);
-  }
+  await setConfigValue('piModelPreferences', Object.keys(current).length > 0 ? current : null);
 }
 
 // ============================================================================
@@ -757,43 +574,16 @@ export function buildEnhancedPath(): string {
 
 /**
  * Builds the complete environment object used by local tools and debug panels.
- * Codex OAuth is handled by Pi SDK AuthStorage, not environment variables.
+ * Provider credentials are handled by Pi SDK AuthStorage, not environment variables.
  */
 export function buildPiSessionEnv(): Record<string, string> {
   const enhancedPath = buildEnhancedPath();
   const workspaceDir = getWorkspaceDir();
-  const provider = getProvider();
 
-  // Start with process.env but explicitly set provider-specific values below.
   const env: Record<string, string> = {
     ...process.env,
     PATH: enhancedPath
   };
-
-  // Configure API key and base URL based on provider
-  if (provider === 'glm') {
-    // GLM provider: use GLM API key and base URL
-    const glmApiKey = getGlmApiKey();
-    const glmBaseUrl = getGlmBaseUrl();
-
-    // CRITICAL: GLM requires an API key - throw error if missing
-    if (!glmApiKey) {
-      throw new Error(
-        'GLM_API_KEY_MISSING: Z.AI GLM provider is selected but no API key is configured. Please add your GLM API key in Settings.'
-      );
-    }
-
-    env.GLM_API_KEY = glmApiKey;
-    env.GLM_BASE_URL = glmBaseUrl;
-
-    const glmModels = getGlmModels();
-    env.GLM_FAST_MODEL = glmModels.fast;
-    env.GLM_SMART_MODEL = glmModels.smart;
-    env.GLM_DEEP_MODEL = glmModels.deep;
-
-    // Longer timeout for GLM API (50 minutes as per Z.AI docs)
-    env.API_TIMEOUT_MS = '3000000';
-  }
 
   if (process.platform === 'win32') {
     const bashExePath = getBashExePath();
@@ -907,10 +697,7 @@ export async function ensureWorkspaceDir(): Promise<void> {
       }
 
       const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_RENDERER_URL;
-      const resourcesDir =
-        isDev ?
-          join(app.getAppPath(), 'resources')
-        : process.resourcesPath;
+      const resourcesDir = isDev ? join(app.getAppPath(), 'resources') : process.resourcesPath;
 
       // Platform-aware binary names
       const binaries = [

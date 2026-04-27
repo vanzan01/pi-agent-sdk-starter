@@ -1,52 +1,80 @@
 import { existsSync, readFileSync } from 'fs';
 import { createRequire } from 'module';
 import { release, type, version } from 'os';
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, type WebContents } from 'electron';
 
 import { THINKING_LEVELS, THINKING_PRESETS, type ThinkingLevel } from '../../shared/constants';
-import { DEFAULT_GLM_BASE_URL, type ModelProvider } from '../../shared/core';
+import type { ChatModelPreference } from '../../shared/core';
 import { getSkillStatus } from '../core/skills';
-import { resetSession } from '../lib/pi-session';
 import {
-  buildPiSessionEnv,
   buildEnhancedPath,
-  DEFAULT_CODEX_MODELS,
-  DEFAULT_GLM_MODELS,
+  buildPiSessionEnv,
   DEFAULT_SYSTEM_PROMPT_APPEND,
   ensureWorkspaceDir,
-  // Model config
-  getCodexModelsWithSource,
   getAppSettings,
   getConfigStatus,
   // Layered config utilities
   getCurrentProjectDir,
   getDebugModeWithSource,
   getFloatingNavWithSource,
-  getGlmApiKeyWithSource,
-  getGlmBaseUrlWithSource,
-  getGlmModelsWithSource,
   getMergedConfig,
-  // Provider config
-  getProviderWithSource,
   getSystemPromptAppendWithSource,
   getThinkingLevel,
   getThinkingLevelWithSource,
   getWorkspaceDir,
   hasWorkspaceDir,
   initProjectConfig,
-  setCodexModels,
   setAppSettings,
   setConfigValue,
-  setGlmApiKey,
-  setGlmBaseUrl,
-  setGlmModels,
-  setProvider,
   setWorkspaceDir,
-  type ConfigSource,
-  type ModelConfig
+  type ConfigSource
 } from '../lib/config';
+import {
+  clearPiProviderAuth,
+  getPiModelsState,
+  loginPiOAuthProvider,
+  selectPiModelPreference,
+  setPiProviderApiKey,
+  type PiOAuthPromptRequest
+} from '../lib/pi-models';
+import { ensurePiRuntimePaths } from '../lib/pi-runtime';
+import { resetSession } from '../lib/pi-session';
 
 const requireModule = createRequire(import.meta.url);
+const OAUTH_PROMPT_TIMEOUT_MS = 10 * 60 * 1000;
+
+function requestRendererOAuthInput(
+  webContents: WebContents,
+  request: PiOAuthPromptRequest
+): Promise<string> {
+  const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      clearTimeout(timeout);
+      ipcMain.removeListener('config:pi-oauth-prompt-response', listener);
+    };
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('OAuth input timed out.'));
+    }, OAUTH_PROMPT_TIMEOUT_MS);
+    const listener = (
+      event: Electron.IpcMainEvent,
+      response: { requestId: string; value?: string; cancelled?: boolean }
+    ) => {
+      if (event.sender !== webContents || response.requestId !== requestId) return;
+      cleanup();
+      if (response.cancelled) {
+        reject(new Error('OAuth login was cancelled.'));
+      } else {
+        resolve(response.value ?? '');
+      }
+    };
+
+    ipcMain.on('config:pi-oauth-prompt-response', listener);
+    webContents.send('config:pi-oauth-prompt', { requestId, ...request });
+  });
+}
 
 function getPiSdkVersion(): string {
   try {
@@ -104,15 +132,12 @@ export function registerConfigHandlers(): void {
     // Create the new workspace directory and sync .agents folder
     await ensureWorkspaceDir();
 
-    // Notify all renderer windows about the workspace change
-    // Include the new provider setting so UI can update immediately
-    const newProvider = getProviderWithSource().value;
+    // Notify all renderer windows about the workspace change.
     const windows = BrowserWindow.getAllWindows();
     for (const win of windows) {
       if (!win.isDestroyed()) {
         win.webContents.send('config:workspace-changed', {
-          workspaceDir: trimmedPath,
-          provider: newProvider
+          workspaceDir: trimmedPath
         });
       }
     }
@@ -273,6 +298,7 @@ export function registerConfigHandlers(): void {
 
   // Get app diagnostic metadata (versions, platform info, etc.)
   ipcMain.handle('config:get-diagnostic-metadata', () => {
+    const piPaths = ensurePiRuntimePaths(getWorkspaceDir());
     return {
       appVersion: app.getVersion(),
       electronVersion: process.versions.electron,
@@ -280,6 +306,11 @@ export function registerConfigHandlers(): void {
       v8Version: process.versions.v8,
       nodeVersion: process.versions.node,
       piSdkVersion: getPiSdkVersion(),
+      piSdkDir: piPaths.sdkDir,
+      piProjectConfigDir: piPaths.projectConfigDir,
+      piAuthPath: piPaths.authPath,
+      piModelsPath: piPaths.modelsPath,
+      piSettingsPath: piPaths.settingsPath,
       platform: process.platform,
       arch: process.arch,
       osRelease: release(),
@@ -428,188 +459,63 @@ export function registerConfigHandlers(): void {
   // Provider Configuration
   // ============================================================================
 
-  // Get current provider with source info
-  ipcMain.handle('config:get-provider', () => {
-    const result = getProviderWithSource();
-    return {
-      provider: result.value,
-      source: result.source
-    };
-  });
+  ipcMain.handle('config:get-pi-models-state', () => getPiModelsState());
 
-  // Set provider (codex or glm)
-  ipcMain.handle('config:set-provider', async (_event, provider: ModelProvider) => {
-    // Validate provider value
-    if (provider !== 'codex' && provider !== 'glm') {
+  ipcMain.handle(
+    'config:set-pi-provider-api-key',
+    async (_event, provider: string, apiKey: string | null) => {
+      try {
+        return { success: true, state: await setPiProviderApiKey(provider, apiKey) };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to save provider API key'
+        };
+      }
+    }
+  );
+
+  ipcMain.handle('config:clear-pi-provider-auth', async (_event, provider: string) => {
+    try {
+      return { success: true, state: await clearPiProviderAuth(provider) };
+    } catch (error) {
       return {
         success: false,
-        error: `Invalid provider: ${provider}. Must be 'codex' or 'glm'`
+        error: error instanceof Error ? error.message : 'Failed to clear provider credentials'
       };
     }
+  });
 
+  ipcMain.handle('config:login-pi-oauth-provider', async (event, provider: string) => {
     try {
-      await setProvider(provider);
-
-      // Reset session when provider changes to apply new config
-      await resetSession();
-
       return {
         success: true,
-        provider
+        state: await loginPiOAuthProvider(provider, {
+          requestInput: (request) => requestRendererOAuthInput(event.sender, request)
+        })
       };
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Failed to set provider'
+        error: error instanceof Error ? error.message : 'Failed to complete OAuth login'
       };
     }
   });
 
-  // Get GLM configuration (API key + base URL)
-  ipcMain.handle('config:get-glm-config', () => {
-    // Ensure workspace is initialized so currentProjectDir is set for .env file reading
-    getWorkspaceDir();
-
-    const apiKeyResult = getGlmApiKeyWithSource();
-    const baseUrlResult = getGlmBaseUrlWithSource();
-
-    return {
-      apiKey: apiKeyResult.value || null,
-      baseUrl: baseUrlResult.value,
-      apiKeySource: apiKeyResult.source,
-      baseUrlSource: baseUrlResult.source
-    };
-  });
-
-  // Set GLM API key (stored in .env file for security)
-  ipcMain.handle('config:set-glm-api-key', async (_event, apiKey: string | null) => {
-    try {
-      const normalized = apiKey?.trim() || null;
-      setGlmApiKey(normalized);
-
-      // Existing Pi SDK sessions keep their in-memory runtime API key. Reset immediately so
-      // clearing the GLM key actually disables GLM instead of letting the old session continue.
-      await resetSession();
-
-      const apiKeyResult = getGlmApiKeyWithSource();
-      const baseUrlResult = getGlmBaseUrlWithSource();
-
-      return {
-        success: true,
-        apiKey: apiKeyResult.value || null,
-        baseUrl: baseUrlResult.value
-      };
-    } catch (error) {
-      console.error('Failed to save GLM API key:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to save GLM API key'
-      };
+  ipcMain.handle(
+    'config:select-pi-model-preference',
+    async (_event, preference: ChatModelPreference, provider: string, modelId: string) => {
+      try {
+        return {
+          success: true,
+          state: await selectPiModelPreference(preference, provider, modelId)
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to select model'
+        };
+      }
     }
-  });
-
-  // Set GLM base URL
-  ipcMain.handle('config:set-glm-base-url', async (_event, baseUrl: string | null) => {
-    try {
-      await setGlmBaseUrl(baseUrl);
-      await resetSession();
-
-      const apiKeyResult = getGlmApiKeyWithSource();
-      const baseUrlResult = getGlmBaseUrlWithSource();
-
-      return {
-        success: true,
-        apiKey: apiKeyResult.value || null,
-        baseUrl: baseUrlResult.value
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to save GLM base URL'
-      };
-    }
-  });
-
-  // Get default GLM base URL (for reset functionality)
-  ipcMain.handle('config:get-default-glm-base-url', () => {
-    return {
-      baseUrl: DEFAULT_GLM_BASE_URL
-    };
-  });
-
-  // ============================================================================
-  // Model IDs Configuration
-  // ============================================================================
-
-  // Get Codex model IDs with source info
-  ipcMain.handle('config:get-codex-models', () => {
-    const result = getCodexModelsWithSource();
-    return {
-      models: result.value,
-      source: result.source
-    };
-  });
-
-  // Set Codex model IDs
-  ipcMain.handle('config:set-codex-models', async (_event, models: ModelConfig) => {
-    try {
-      await setCodexModels(models);
-      // Reset session to apply new model config
-      await resetSession();
-      const result = getCodexModelsWithSource();
-      return {
-        success: true,
-        models: result.value,
-        source: result.source
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to save Codex models'
-      };
-    }
-  });
-
-  // Get default Codex model IDs (for reset functionality)
-  ipcMain.handle('config:get-default-codex-models', () => {
-    return {
-      models: DEFAULT_CODEX_MODELS
-    };
-  });
-
-  // Get GLM model IDs with source info
-  ipcMain.handle('config:get-glm-models', () => {
-    const result = getGlmModelsWithSource();
-    return {
-      models: result.value,
-      source: result.source
-    };
-  });
-
-  // Set GLM model IDs
-  ipcMain.handle('config:set-glm-models', async (_event, models: ModelConfig) => {
-    try {
-      await setGlmModels(models);
-      // Reset session to apply new model config
-      await resetSession();
-      const result = getGlmModelsWithSource();
-      return {
-        success: true,
-        models: result.value,
-        source: result.source
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : 'Failed to save GLM models'
-      };
-    }
-  });
-
-  // Get default GLM model IDs (for reset functionality)
-  ipcMain.handle('config:get-default-glm-models', () => {
-    return {
-      models: DEFAULT_GLM_MODELS
-    };
-  });
+  );
 }

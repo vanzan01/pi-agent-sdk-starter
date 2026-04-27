@@ -3,7 +3,7 @@
 [![Built with Pi SDK](https://img.shields.io/badge/Pi%20SDK-Starter%20Kit-00bcd4)](https://www.npmjs.com/package/@mariozechner/pi-coding-agent)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> A batteries-included starter for building agentic desktop apps with Pi SDK, Codex, and OpenAI-compatible providers.
+> A batteries-included starter for building agentic desktop apps with Pi SDK and configurable providers.
 
 ![Pi Starter SDK Overview](static/hero.jpg)
 
@@ -12,7 +12,7 @@
 This starter demonstrates how to build real desktop agent apps without mixing the agent runtime, provider routing, and UI shell into one hard-to-change layer.
 
 1. **Separate agent runtime from UI** - Pi SDK handles agents, tools, skills, streaming, state, and model routing.
-2. **Support provider flexibility** - Use Codex OAuth or OpenAI-compatible API providers such as GLM.
+2. **Support provider flexibility** - Configure Pi SDK OAuth and API-key providers from Settings.
 3. **Ship useful app patterns** - The demo app shows a multi-stage agent workflow with scoped skills.
 4. **Keep the starter practical** - Electron and React are the app shell, not the agent runtime.
 
@@ -29,23 +29,30 @@ bun run test:ai-news-tweet
 ## Quick Start
 
 **Prerequisites:**
+
 - Node.js v18+
 - Bun available on PATH, or use the bundled runtime after first setup
-- Pi/Codex authentication for Codex, or a provider API key for OpenAI-compatible providers
+- Provider credentials configured through the starter's Pi SDK auth flow
 
 ```bash
 bun install
 bun run dev
 ```
 
-For Codex, sign in through Pi:
+The starter embeds `@mariozechner/pi-coding-agent`; users do not need a separate global Pi install. Provider credentials are intentionally separate from the Pi CLI and are stored in the shared Pi SDK auth file:
 
-```bash
-pi
-/login
+```text
+~/.pi-sdk/auth.json
 ```
 
-Choose the Codex/OpenAI login path. For GLM or another OpenAI-compatible provider, configure the provider in Settings and add the required API key.
+Project-specific model/provider catalogs live with the project:
+
+```text
+<project>/.pi-sdk/models.json
+<project>/.pi-sdk/config.json
+```
+
+On a fresh install, open Settings -> Models & Providers to authenticate a provider and choose the fast/smart/deep model routing.
 
 ## Project Structure
 
@@ -63,7 +70,19 @@ src/
 resources/                  # Runtime binaries downloaded on demand
 ```
 
-Project-local settings are stored in `.pi-sdk/config.json`. Secrets stay in `.env`.
+Project-local settings are stored in `.pi-sdk/config.json`. Pi SDK credentials are stored globally for SDK apps in `~/.pi-sdk/auth.json`; project model catalogs are stored in `.pi-sdk/models.json`.
+
+## Pi SDK Runtime Layout
+
+The app owns its Pi SDK path policy instead of relying on Pi CLI defaults. This avoids reading or mutating the user's global Pi CLI config at `~/.pi/agent` while still allowing multiple Pi SDK apps to share credentials.
+
+```text
+~/.pi-sdk/auth.json          # Shared Pi SDK credentials, OAuth tokens, API keys
+<project>/.pi-sdk/models.json # Project-specific provider/model catalog
+<project>/.pi-sdk/config.json # Project-specific starter settings
+```
+
+This split keeps secrets out of project exports while letting each starter project define its own providers, local endpoints, proxies, and model defaults.
 
 ## Building Your Own App
 
@@ -77,15 +96,14 @@ See [docs/BUILDING_APPS.md](docs/BUILDING_APPS.md) for the full guide.
 
 ## Providers
 
-The default provider path is Codex through Pi SDK OAuth. The starter also includes GLM/Z.AI as an OpenAI-compatible API-key provider example.
+Provider auth and model routing are configured through Settings using the Pi SDK provider/model registry.
 
-| Provider | Auth |
-| --- | --- |
-| Codex | Pi OAuth login |
-| GLM/Z.AI | `GLM_API_KEY` in project `.env` or Settings |
-| Other compatible providers | Add provider wiring and API-key settings |
+| Provider                   | Auth                                                                    |
+| -------------------------- | ----------------------------------------------------------------------- |
+| OAuth providers            | Pi SDK OAuth credentials in `~/.pi-sdk/auth.json`                       |
+| Other compatible providers | Project `.pi-sdk/models.json` plus credentials in `~/.pi-sdk/auth.json` |
 
-Model IDs are configurable in Settings. Codex defaults use `gpt-5.4` for fast/smart and `gpt-5.5` for deep.
+Settings lets you choose provider/model pairs for the fast, smart, and deep tiers.
 
 ## Runtime Binaries
 
@@ -106,7 +124,7 @@ bun run build                  # Build for production
 bun run typecheck              # Type check
 bun run lint                   # Lint code
 bun run test:ai-news-tweet     # Run pipeline smoke test
-bun run test:bypass-auth       # Verify Pi/Codex auth
+bun run test:bypass-auth       # Verify Pi SDK auth
 bun run test:context-window    # Verify expected context windows
 bun run test:export            # Verify standalone export flow
 ```

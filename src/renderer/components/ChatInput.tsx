@@ -1,11 +1,11 @@
-import { ArrowUp, Brain, Loader2, Paperclip, Square, Gauge } from 'lucide-react';
+import { ArrowUp, Brain, Gauge, Loader2, Paperclip, Square } from 'lucide-react';
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import AttachmentPreviewList from '@/components/AttachmentPreviewList';
+import type { ContextWindowInfo } from '@/hooks/chat/useMessageStream';
 
 import { THINKING_LEVELS, THINKING_PRESETS, type ThinkingLevel } from '../../shared/core';
-import type { ChatModelPreference, ModelProvider } from '../../shared/core';
-import type { ContextWindowInfo } from '@/hooks/chat/useMessageStream';
+import type { ChatModelPreference } from '../../shared/core';
 
 interface ChatInputProps {
   value: string;
@@ -32,9 +32,6 @@ interface ChatInputProps {
   thinkingLevel: ThinkingLevel;
   onThinkingLevelChange: (level: ThinkingLevel) => void;
   isThinkingLevelUpdating?: boolean;
-  provider: ModelProvider;
-  onProviderChange: (provider: ModelProvider) => void;
-  isProviderUpdating?: boolean;
   contextWindowInfo?: ContextWindowInfo | null;
 }
 
@@ -57,9 +54,6 @@ export default function ChatInput({
   thinkingLevel,
   onThinkingLevelChange,
   isThinkingLevelUpdating = false,
-  provider,
-  onProviderChange,
-  isProviderUpdating = false,
   contextWindowInfo
 }: ChatInputProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -232,14 +226,9 @@ export default function ChatInput({
     onThinkingLevelChange(level);
   };
 
-  const handleProviderToggle = (newProvider: ModelProvider) => {
-    if (newProvider === provider) return;
-    if (isProviderUpdating) return;
-    onProviderChange(newProvider);
-  };
-
   const formatTokenCount = (tokens: number) => {
-    if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(tokens % 1_000_000 === 0 ? 0 : 1)}M`;
+    if (tokens >= 1_000_000)
+      return `${(tokens / 1_000_000).toFixed(tokens % 1_000_000 === 0 ? 0 : 1)}M`;
     return `${Math.round(tokens / 1000)}k`;
   };
 
@@ -256,7 +245,6 @@ export default function ChatInput({
     : 0;
   const displayModelId = contextWindowInfo?.modelId ?? contextWindowInfo?.model?.split('/').pop();
   const displayCost = formatCost(contextWindowInfo?.cost);
-  const isReasoningAvailable = provider === 'codex';
 
   const [isThinkingDropdownOpen, setIsThinkingDropdownOpen] = useState(false);
   const thinkingDropdownRef = useRef<HTMLDivElement>(null);
@@ -283,9 +271,7 @@ export default function ChatInput({
       <div className="mx-auto max-w-3xl">
         <div
           className={`rounded-3xl bg-[var(--bg-white)] p-5 pb-3 shadow-[var(--shadow-input)] ${
-            isDragActive ?
-              'ring-2 ring-[var(--accent-coral)]/50'
-            : ''
+            isDragActive ? 'ring-2 ring-[var(--accent-coral)]/50' : ''
           }`}
           onClick={handleInputContainerClick}
           onDragEnter={handleDragEnter}
@@ -388,64 +374,22 @@ export default function ChatInput({
               {isModelPreferenceUpdating && (
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--text-tertiary)]" />
               )}
-              {/* Provider Toggle */}
-              <div className="flex rounded-full bg-[var(--user-bubble)] p-1">
-                <button
-                  type="button"
-                  aria-pressed={provider === 'codex'}
-                  onClick={() => handleProviderToggle('codex')}
-                  disabled={isProviderUpdating}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                    provider === 'codex' ?
-                      'bg-[var(--bg-white)] text-[var(--text-primary)] shadow-sm'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  } ${isProviderUpdating ? 'opacity-70' : ''}`}
-                  title="Use Codex Codex API"
-                >
-                  Codex
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={provider === 'glm'}
-                  onClick={() => handleProviderToggle('glm')}
-                  disabled={isProviderUpdating}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                    provider === 'glm' ?
-                      'bg-[var(--bg-white)] text-[var(--text-primary)] shadow-sm'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  } ${isProviderUpdating ? 'opacity-70' : ''}`}
-                  title="Use Z.AI GLM API"
-                >
-                  Z.AI
-                </button>
-              </div>
-              {isProviderUpdating && (
-                <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--text-tertiary)]" />
-              )}
-              {/* Codex reasoning-effort dropdown. GLM/ZAI has no reasoning modes, so it is disabled. */}
+              {/* Reasoning-effort dropdown. Provider/model routing is configured through Pi SDK Settings. */}
               <div ref={thinkingDropdownRef} className="relative">
                 <button
                   type="button"
-                  onClick={() => isReasoningAvailable && setIsThinkingDropdownOpen(!isThinkingDropdownOpen)}
-                  disabled={isThinkingLevelUpdating || !isReasoningAvailable}
+                  onClick={() => setIsThinkingDropdownOpen(!isThinkingDropdownOpen)}
+                  disabled={isThinkingLevelUpdating}
                   className={`flex items-center gap-1.5 rounded-full bg-[var(--user-bubble)] px-3 py-1.5 text-xs font-medium transition ${
-                    isThinkingLevelUpdating ? 'opacity-70' : ''
-                  } ${
-                    !isReasoningAvailable ?
-                      'cursor-not-allowed text-[var(--text-tertiary)] opacity-50'
-                    : 'text-[var(--text-secondary)]'
+                    isThinkingLevelUpdating ? 'opacity-70' : 'text-[var(--text-secondary)]'
                   }`}
-                  title={
-                    isReasoningAvailable ?
-                      `Codex reasoning: ${THINKING_PRESETS[thinkingLevel].description}`
-                    : 'Reasoning modes are only available for Codex; GLM/ZAI has no modes'
-                  }
+                  title={`Reasoning: ${THINKING_PRESETS[thinkingLevel].description}`}
                 >
                   <Brain className="h-3.5 w-3.5" />
-                  <span>{isReasoningAvailable ? THINKING_PRESETS[thinkingLevel].label : 'No modes'}</span>
+                  <span>{THINKING_PRESETS[thinkingLevel].label}</span>
                   {isThinkingLevelUpdating && <Loader2 className="h-3 w-3 animate-spin" />}
                 </button>
-                {isThinkingDropdownOpen && isReasoningAvailable && (
+                {isThinkingDropdownOpen && (
                   <div className="absolute bottom-full left-0 z-20 mb-2 w-48 rounded-xl bg-[var(--bg-white)] p-1 shadow-lg ring-1 ring-[var(--border-light)]">
                     {THINKING_LEVELS.map((level) => (
                       <button
@@ -456,9 +400,9 @@ export default function ChatInput({
                           setIsThinkingDropdownOpen(false);
                         }}
                         className={`flex w-full flex-col items-start rounded-lg px-3 py-2 text-left transition ${
-                          level === thinkingLevel ?
-                            'bg-[var(--user-bubble)]'
-                          : 'hover:bg-[var(--bg-cream)]'
+                          level === thinkingLevel ? 'bg-[var(--user-bubble)]' : (
+                            'hover:bg-[var(--bg-cream)]'
+                          )
                         }`}
                       >
                         <span className="text-sm font-medium text-[var(--text-primary)]">
@@ -474,23 +418,28 @@ export default function ChatInput({
               </div>
             </div>
             {contextWindowInfo && (
-                <div
-                  className="col-start-1 row-start-2 flex w-fit max-w-full items-center gap-1.5 rounded-full bg-[var(--user-bubble)] px-2.5 py-1 text-xs whitespace-nowrap text-[var(--text-tertiary)]"
-                  title={`${contextWindowInfo.model}${contextWindowInfo.thinkingLevel ? ` · ${contextWindowInfo.thinkingLevel}` : ''} — ${contextTokensUsed.toLocaleString()} tokens used, ${contextTokensRemaining.toLocaleString()} remaining of ${contextWindow.toLocaleString()} context${typeof contextWindowInfo.totalInputTokens === 'number' ? ` · input ${contextWindowInfo.totalInputTokens.toLocaleString()}` : ''}${typeof contextWindowInfo.totalOutputTokens === 'number' ? ` · output ${contextWindowInfo.totalOutputTokens.toLocaleString()}` : ''}${displayCost ? ` · ${displayCost}` : ''}`}
-                >
-                  <Gauge className="h-3 w-3" />
-                  {displayModelId && (
-                    <span className="hidden md:inline text-[var(--text-quaternary)]">{displayModelId}</span>
-                  )}
-                  <span>{contextPercent}%</span>
-                  <span className="hidden sm:inline text-[var(--text-quaternary)]">
-                    {formatTokenCount(contextTokensRemaining)} left / {formatTokenCount(contextWindow)}
+              <div
+                className="col-start-1 row-start-2 flex w-fit max-w-full items-center gap-1.5 rounded-full bg-[var(--user-bubble)] px-2.5 py-1 text-xs whitespace-nowrap text-[var(--text-tertiary)]"
+                title={`${contextWindowInfo.model}${contextWindowInfo.thinkingLevel ? ` · ${contextWindowInfo.thinkingLevel}` : ''} — ${contextTokensUsed.toLocaleString()} tokens used, ${contextTokensRemaining.toLocaleString()} remaining of ${contextWindow.toLocaleString()} context${typeof contextWindowInfo.totalInputTokens === 'number' ? ` · input ${contextWindowInfo.totalInputTokens.toLocaleString()}` : ''}${typeof contextWindowInfo.totalOutputTokens === 'number' ? ` · output ${contextWindowInfo.totalOutputTokens.toLocaleString()}` : ''}${displayCost ? ` · ${displayCost}` : ''}`}
+              >
+                <Gauge className="h-3 w-3" />
+                {displayModelId && (
+                  <span className="hidden text-[var(--text-quaternary)] md:inline">
+                    {displayModelId}
                   </span>
-                  {displayCost && (
-                    <span className="hidden lg:inline text-[var(--text-quaternary)]">{displayCost}</span>
-                  )}
-                </div>
-              )}
+                )}
+                <span>{contextPercent}%</span>
+                <span className="hidden text-[var(--text-quaternary)] sm:inline">
+                  {formatTokenCount(contextTokensRemaining)} left /{' '}
+                  {formatTokenCount(contextWindow)}
+                </span>
+                {displayCost && (
+                  <span className="hidden text-[var(--text-quaternary)] lg:inline">
+                    {displayCost}
+                  </span>
+                )}
+              </div>
+            )}
             <button
               onClick={isLoading && onStopStreaming ? onStopStreaming : onSend}
               disabled={isLoading && onStopStreaming ? false : !computedCanSend || isLoading}
@@ -498,7 +447,7 @@ export default function ChatInput({
                 isLoading && onStopStreaming ?
                   'bg-[var(--user-bubble)] text-[var(--text-primary)] hover:bg-[var(--border-light)]'
                 : 'bg-[var(--accent-coral)] text-white hover:bg-[var(--accent-coral-dark)]'
-              } col-start-2 row-start-1 row-span-2 self-end justify-self-end`}
+              } col-start-2 row-span-2 row-start-1 self-end justify-self-end`}
             >
               {isLoading ?
                 onStopStreaming ?

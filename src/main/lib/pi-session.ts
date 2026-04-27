@@ -1,14 +1,11 @@
-import { BrowserWindow } from 'electron';
 import { getModel } from '@mariozechner/pi-ai';
 import {
-  AuthStorage,
   createAgentSession,
   DefaultResourceLoader,
-  getAgentDir,
-  ModelRegistry,
   SessionManager,
   type AgentSession
 } from '@mariozechner/pi-coding-agent';
+import { BrowserWindow } from 'electron';
 
 import type { AgentDefinition } from '../../shared/apps';
 import type { ThinkingLevel } from '../../shared/constants';
@@ -23,9 +20,7 @@ import {
 import {
   getChatModelPreferenceSetting,
   getDebugMode,
-  getGlmApiKey,
-  getGlmModels,
-  getProvider,
+  getPiModelPreference,
   getSystemPromptAppend,
   getThinkingLevel,
   getWorkspaceDir,
@@ -41,12 +36,18 @@ import {
   resetAbortFlag,
   setSessionId
 } from './message-queue';
+import { normalizePiSdkError } from './pi-error-normalizer';
+import {
+  createEmbeddedPiAuthStorage,
+  createEmbeddedPiModelRegistry,
+  createEmbeddedPiSettingsManager,
+  ensurePiRuntimePaths
+} from './pi-runtime';
 
 const FAST_MODEL_ID = 'gpt-5.4';
 const SMART_MODEL_ID = 'gpt-5.4';
 const DEEP_MODEL_ID = 'gpt-5.5';
-const CODEX_PROVIDER = 'openai-codex';
-const GLM_PROVIDER = 'zai';
+const DEFAULT_PROVIDER = 'openai-codex';
 
 const MODEL_BY_PREFERENCE: Record<ChatModelPreference, string> = {
   fast: FAST_MODEL_ID,
@@ -170,10 +171,7 @@ function getModelIdForPreference(preference?: ChatModelPreference): string {
 
 type PiThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
 
-function mapThinkingLevel(level: ThinkingLevel, provider: string): PiThinkingLevel {
-  if (provider === GLM_PROVIDER) {
-    return 'off';
-  }
+function mapThinkingLevel(level: ThinkingLevel): PiThinkingLevel {
   return level;
 }
 
@@ -202,21 +200,20 @@ function buildIdentityGuard(provider: string, modelId: string): string {
   ].join('\n');
 }
 
-async function createPiSession(systemPrompt: string, modelId: string): Promise<AgentSession> {
+async function createPiSession(
+  systemPrompt: string,
+  preference: ChatModelPreference
+): Promise<AgentSession> {
   const cwd = getWorkspaceDir();
-  const authStorage = AuthStorage.create();
-  const provider = getProvider() === 'glm' ? GLM_PROVIDER : CODEX_PROVIDER;
-  const effectiveModelId = provider === GLM_PROVIDER ? modelId.toLowerCase() : modelId;
+  const piPaths = ensurePiRuntimePaths(cwd);
+  const authStorage = createEmbeddedPiAuthStorage();
+  const selectedPiModel = getPiModelPreference(preference);
+  const provider = selectedPiModel?.provider ?? DEFAULT_PROVIDER;
+  const fallbackModelId = getModelIdForPreference(preference);
+  const rawModelId = selectedPiModel?.modelId ?? fallbackModelId;
+  const effectiveModelId = rawModelId;
 
-  if (provider === GLM_PROVIDER) {
-    const glmApiKey = getGlmApiKey();
-    if (!glmApiKey) {
-      throw new Error('GLM_API_KEY_MISSING: Z.AI GLM provider is selected but no API key is configured.');
-    }
-    authStorage.setRuntimeApiKey(GLM_PROVIDER, glmApiKey);
-  }
-
-  const modelRegistry = ModelRegistry.create(authStorage);
+  const modelRegistry = createEmbeddedPiModelRegistry(authStorage);
   const model =
     modelRegistry.find(provider as never, effectiveModelId as never) ??
     getModel(provider as never, effectiveModelId as never);
@@ -226,21 +223,25 @@ async function createPiSession(systemPrompt: string, modelId: string): Promise<A
 
   const resourceLoader = new DefaultResourceLoader({
     cwd,
-    agentDir: getAgentDir(),
-    systemPromptOverride: () => [
-      buildIdentityGuard(provider, effectiveModelId),
-      systemPrompt || 'You are a helpful coding assistant powered by Pi SDK.'
-    ].filter(Boolean).join('\n\n')
+    agentDir: piPaths.projectConfigDir,
+    systemPromptOverride: () =>
+      [
+        buildIdentityGuard(provider, effectiveModelId),
+        systemPrompt || 'You are a helpful coding assistant powered by Pi SDK.'
+      ]
+        .filter(Boolean)
+        .join('\n\n')
   });
   await resourceLoader.reload();
 
   const { session } = await createAgentSession({
     cwd,
     model,
-    thinkingLevel: mapThinkingLevel(getThinkingLevel(), provider),
+    thinkingLevel: mapThinkingLevel(getThinkingLevel()),
     authStorage,
     modelRegistry,
     resourceLoader,
+    settingsManager: createEmbeddedPiSettingsManager(cwd),
     sessionManager: SessionManager.inMemory()
   });
 
@@ -258,19 +259,24 @@ function emitContextWindowUpdate(
   if (!contextWindow) return;
 
   const stats = session.getSessionStats();
-  sendAgentEvent(mainWindow, 'context-window-update', {
-    model: model ? `${model.provider}/${model.id}` : 'unknown',
-    provider: model?.provider ?? 'unknown',
-    modelId: model?.id ?? 'unknown',
-    thinkingLevel: session.thinkingLevel,
-    contextWindow,
-    tokensUsed: usage?.tokens ?? 0,
-    contextPercent: usage?.percent ?? null,
-    totalInputTokens: stats.tokens.input,
-    totalOutputTokens: stats.tokens.output,
-    totalTokens: stats.tokens.total,
-    cost: stats.cost
-  }, appIdSnapshot);
+  sendAgentEvent(
+    mainWindow,
+    'context-window-update',
+    {
+      model: model ? `${model.provider}/${model.id}` : 'unknown',
+      provider: model?.provider ?? 'unknown',
+      modelId: model?.id ?? 'unknown',
+      thinkingLevel: session.thinkingLevel,
+      contextWindow,
+      tokensUsed: usage?.tokens ?? 0,
+      contextPercent: usage?.percent ?? null,
+      totalInputTokens: stats.tokens.input,
+      totalOutputTokens: stats.tokens.output,
+      totalTokens: stats.tokens.total,
+      cost: stats.cost
+    },
+    appIdSnapshot
+  );
 }
 
 function bindSessionEvents(
@@ -279,43 +285,70 @@ function bindSessionEvents(
   appIdSnapshot: string
 ): () => void {
   setSessionId(session.sessionId);
-  sendAgentEvent(mainWindow, 'session-updated', { sessionId: session.sessionId, resumed: false }, appIdSnapshot);
+  sendAgentEvent(
+    mainWindow,
+    'session-updated',
+    { sessionId: session.sessionId, resumed: false },
+    appIdSnapshot
+  );
   emitContextWindowUpdate(session, mainWindow, appIdSnapshot);
 
   return session.subscribe((event: Record<string, unknown>) => {
     if (getDebugMode()) {
-      sendAgentEvent(mainWindow, 'debug-message', { message: `[pi-sdk] ${event.type}` }, appIdSnapshot);
+      sendAgentEvent(
+        mainWindow,
+        'debug-message',
+        { message: `[pi-sdk] ${event.type}` },
+        appIdSnapshot
+      );
     }
 
     switch (event.type) {
       case 'message_update': {
-        const assistantEvent = event.assistantMessageEvent as { type?: string; delta?: string } | undefined;
+        const assistantEvent = event.assistantMessageEvent as
+          | { type?: string; delta?: string }
+          | undefined;
         if (assistantEvent?.type === 'text_delta') {
           const delta = assistantEvent.delta ?? '';
           sendAgentEvent(mainWindow, 'message-chunk', { chunk: delta }, appIdSnapshot);
           transcriptAccumulator += delta;
           processTranscriptForAgentOutputs(appIdSnapshot, mainWindow);
         } else if (assistantEvent?.type === 'thinking_delta') {
-          sendAgentEvent(mainWindow, 'thinking-chunk', { index: -1, delta: assistantEvent.delta ?? '' }, appIdSnapshot);
+          sendAgentEvent(
+            mainWindow,
+            'thinking-chunk',
+            { index: -1, delta: assistantEvent.delta ?? '' },
+            appIdSnapshot
+          );
         }
         break;
       }
       case 'tool_execution_start': {
-        sendAgentEvent(mainWindow, 'tool-use-start', {
-          id: event.toolCallId ?? event.id ?? `${event.toolName}-${Date.now()}`,
-          name: event.toolName ?? 'tool',
-          input: event.parameters ?? event.input ?? {},
-          streamIndex: -1
-        }, appIdSnapshot);
+        sendAgentEvent(
+          mainWindow,
+          'tool-use-start',
+          {
+            id: event.toolCallId ?? event.id ?? `${event.toolName}-${Date.now()}`,
+            name: event.toolName ?? 'tool',
+            input: event.parameters ?? event.input ?? {},
+            streamIndex: -1
+          },
+          appIdSnapshot
+        );
         break;
       }
       case 'tool_execution_update': {
         const text = typeof event.output === 'string' ? event.output : event.text;
         if (text) {
-          sendAgentEvent(mainWindow, 'tool-result-delta', {
-            toolUseId: event.toolCallId ?? event.id ?? '',
-            delta: text
-          }, appIdSnapshot);
+          sendAgentEvent(
+            mainWindow,
+            'tool-result-delta',
+            {
+              toolUseId: event.toolCallId ?? event.id ?? '',
+              delta: text
+            },
+            appIdSnapshot
+          );
         }
         break;
       }
@@ -325,11 +358,16 @@ function bindSessionEvents(
           : event.result ? JSON.stringify(event.result, null, 2)
           : typeof event.output === 'string' ? event.output
           : '';
-        sendAgentEvent(mainWindow, 'tool-result-complete', {
-          toolUseId: event.toolCallId ?? event.id ?? '',
-          content,
-          isError: Boolean(event.isError)
-        }, appIdSnapshot);
+        sendAgentEvent(
+          mainWindow,
+          'tool-result-complete',
+          {
+            toolUseId: event.toolCallId ?? event.id ?? '',
+            content,
+            isError: Boolean(event.isError)
+          },
+          appIdSnapshot
+        );
         break;
       }
       case 'turn_start':
@@ -441,7 +479,10 @@ export async function runSingleAgentCall(
     outputFormat?: { type: 'json_schema'; schema: Record<string, unknown> };
   },
   userPrompt: string
-): Promise<{ success: true; response: string; structuredOutput?: unknown } | { success: false; error: string }> {
+): Promise<
+  | { success: true; response: string; structuredOutput?: unknown }
+  | { success: false; error: string }
+> {
   sessionAppId = appId;
   const appIdSnapshot = appId;
   await waitForWorkspaceReady();
@@ -450,41 +491,59 @@ export async function runSingleAgentCall(
   let session: AgentSession | null = null;
   let unsubscribe: (() => void) | null = null;
   try {
-    const requestedModel = (() => {
-      if (getProvider() === 'glm') {
-        const glmModels = getGlmModels();
-        return config.model === 'deep' ? glmModels.deep : glmModels.smart;
-      }
-      return config.model === 'deep' ? DEEP_MODEL_ID : SMART_MODEL_ID;
-    })();
-    const prompt = config.outputFormat ?
-      `${userPrompt}\n\nReturn output that conforms to this JSON schema:\n${JSON.stringify(config.outputFormat.schema, null, 2)}`
-    : userPrompt;
+    const requestedPreference: ChatModelPreference =
+      config.model === 'deep' ? 'deep'
+      : config.model === 'fast' ? 'fast'
+      : 'smart';
+    const prompt =
+      config.outputFormat ?
+        `${userPrompt}\n\nReturn output that conforms to this JSON schema:\n${JSON.stringify(config.outputFormat.schema, null, 2)}`
+      : userPrompt;
 
-    session = await createPiSession(config.systemPrompt, requestedModel);
+    session = await createPiSession(config.systemPrompt, requestedPreference);
     unsubscribe = session.subscribe((event: Record<string, unknown>) => {
       if (event.type === 'message_update') {
-        const assistantEvent = event.assistantMessageEvent as { type?: string; delta?: string } | undefined;
+        const assistantEvent = event.assistantMessageEvent as
+          | { type?: string; delta?: string }
+          | undefined;
         if (assistantEvent?.type === 'text_delta') {
           const delta = assistantEvent.delta ?? '';
           responseText += delta;
           sendAgentEvent(mainWindow, 'message-chunk', { chunk: delta }, appIdSnapshot);
         } else if (assistantEvent?.type === 'thinking_delta') {
-          sendAgentEvent(mainWindow, 'thinking-chunk', { index: -1, delta: assistantEvent.delta ?? '' }, appIdSnapshot);
+          sendAgentEvent(
+            mainWindow,
+            'thinking-chunk',
+            { index: -1, delta: assistantEvent.delta ?? '' },
+            appIdSnapshot
+          );
         }
       } else if (event.type === 'tool_execution_start') {
-        sendAgentEvent(mainWindow, 'tool-use-start', {
-          id: event.toolCallId ?? event.id ?? `${event.toolName}-${Date.now()}`,
-          name: event.toolName ?? 'tool',
-          input: event.parameters ?? event.input ?? {},
-          streamIndex: -1
-        }, appIdSnapshot);
+        sendAgentEvent(
+          mainWindow,
+          'tool-use-start',
+          {
+            id: event.toolCallId ?? event.id ?? `${event.toolName}-${Date.now()}`,
+            name: event.toolName ?? 'tool',
+            input: event.parameters ?? event.input ?? {},
+            streamIndex: -1
+          },
+          appIdSnapshot
+        );
       } else if (event.type === 'tool_execution_end') {
-        sendAgentEvent(mainWindow, 'tool-result-complete', {
-          toolUseId: event.toolCallId ?? event.id ?? '',
-          content: typeof event.result === 'string' ? event.result : JSON.stringify(event.result ?? '', null, 2),
-          isError: Boolean(event.isError)
-        }, appIdSnapshot);
+        sendAgentEvent(
+          mainWindow,
+          'tool-result-complete',
+          {
+            toolUseId: event.toolCallId ?? event.id ?? '',
+            content:
+              typeof event.result === 'string' ?
+                event.result
+              : JSON.stringify(event.result ?? '', null, 2),
+            isError: Boolean(event.isError)
+          },
+          appIdSnapshot
+        );
       } else if (event.type === 'agent_end') {
         sendAgentEvent(mainWindow, 'message-complete', {}, appIdSnapshot);
       }
@@ -493,7 +552,10 @@ export async function runSingleAgentCall(
     return { success: true, response: responseText };
   } catch (error) {
     console.error('[SingleAgent] Error:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    return {
+      success: false,
+      error: normalizePiSdkError(error, 'Unknown error', ensurePiRuntimePaths())
+    };
   } finally {
     unsubscribe?.();
     session?.dispose();
@@ -520,10 +582,14 @@ export async function startStreamingSession(
       systemPromptAppend
     : null;
   const desiredAppend = providedAppend ?? buildDefaultSystemPromptAppend();
-  const toolsChanged = JSON.stringify(allowedTools ?? null) !== JSON.stringify(activeAllowedTools ?? null);
+  const toolsChanged =
+    JSON.stringify(allowedTools ?? null) !== JSON.stringify(activeAllowedTools ?? null);
   const appIdChanged = sessionAppId !== activeAppId;
 
-  if ((isProcessing || querySession) && (desiredAppend !== activeSystemPromptAppend || toolsChanged || appIdChanged)) {
+  if (
+    (isProcessing || querySession) &&
+    (desiredAppend !== activeSystemPromptAppend || toolsChanged || appIdChanged)
+  ) {
     await resetSession();
   }
 
@@ -550,25 +616,12 @@ export async function startStreamingSession(
   await waitForWorkspaceReady();
 
   try {
-    const modelId = (() => {
-      if (getProvider() === 'glm') {
-        const glmModels = getGlmModels();
-        if (modelOverride === 'deep') return glmModels.deep;
-        if (modelOverride === 'smart') return glmModels.smart;
-        if (modelOverride === 'fast') return glmModels.fast;
-        const pref = ensureModelPreference();
-        return glmModels[pref];
-      }
-      return modelOverride === 'deep' ? DEEP_MODEL_ID
-        : modelOverride === 'smart' ? SMART_MODEL_ID
-        : modelOverride === 'fast' ? FAST_MODEL_ID
-        : getModelIdForPreference();
-    })();
+    const modelPreference = modelOverride ?? ensureModelPreference();
 
     activeSystemPromptAppend = desiredAppend;
     activeAllowedTools = allowedTools;
 
-    querySession = await createPiSession(desiredAppend, modelId);
+    querySession = await createPiSession(desiredAppend, modelPreference);
     unsubscribeSession = bindSessionEvents(querySession, mainWindow, sessionAppIdSnapshot);
 
     resolveSessionReady?.();
@@ -594,17 +647,27 @@ export async function startStreamingSession(
     }
   } catch (error) {
     console.error('Error in Pi SDK streaming session:', error);
+    const normalizedError = normalizePiSdkError(
+      error,
+      'Unknown error occurred',
+      ensurePiRuntimePaths()
+    );
     resolveSessionReady?.();
     resolveSessionReady = null;
-    sendAgentEvent(mainWindow, 'message-error', {
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    }, sessionAppIdSnapshot);
+    sendAgentEvent(
+      mainWindow,
+      'message-error',
+      {
+        error: normalizedError
+      },
+      sessionAppIdSnapshot
+    );
     emitEventFromMain(mainWindow, {
       type: 'agent:error',
       timestamp: Date.now(),
       sourceAppId: 'core',
       appId: sessionAppIdSnapshot,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: normalizedError
     });
   } finally {
     activePromptPromise = null;
@@ -618,7 +681,10 @@ export async function startStreamingSession(
   }
 }
 
-async function waitForQueuedMessage(): Promise<{ message: SDKUserMessageContent; resolve: () => void } | null> {
+async function waitForQueuedMessage(): Promise<{
+  message: SDKUserMessageContent;
+  resolve: () => void;
+} | null> {
   while (!shouldAbortSession) {
     const item = messageQueue.shift();
     if (item) return item;

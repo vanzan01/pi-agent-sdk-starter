@@ -8,14 +8,9 @@
 import type {
   ChatModelPreference,
   GetChatModelPreferenceResponse,
-  GetGlmConfigResponse,
-  GetProviderResponse,
-  ModelProvider,
   SendMessagePayload,
   SendMessageResponse,
-  SetChatModelPreferenceResponse,
-  SetGlmConfigResponse,
-  SetProviderResponse
+  SetChatModelPreferenceResponse
 } from '../core';
 
 // Re-export for convenience
@@ -71,6 +66,11 @@ export interface DiagnosticMetadataResponse {
   v8Version: string;
   nodeVersion: string;
   piSdkVersion: string;
+  piSdkDir: string;
+  piProjectConfigDir: string;
+  piAuthPath: string;
+  piModelsPath: string;
+  piSettingsPath: string;
   platform: string;
   arch: string;
   osRelease: string;
@@ -324,30 +324,60 @@ export interface SkillStatusResponse {
   missing: string[];
 }
 
-export interface ModelConfig {
-  fast?: string;
-  smart?: string;
-  deep?: string;
+export interface PiModelReference {
+  provider: string;
+  modelId: string;
 }
 
-export interface ModelConfigResponse {
-  models: {
-    fast: string;
-    smart: string;
-    deep: string;
+export interface PiModelSummary {
+  provider: string;
+  id: string;
+  name: string;
+  reasoning: boolean;
+  input: string[];
+  contextWindow: number;
+  maxTokens: number;
+  available: boolean;
+}
+
+export interface PiProviderSummary {
+  id: string;
+  name: string;
+  authConfigured: boolean;
+  authSource?: string;
+  authLabel?: string;
+  supportsOAuth: boolean;
+  usesCallbackServer?: boolean;
+  modelCount: number;
+  availableModelCount: number;
+  models: PiModelSummary[];
+}
+
+export interface PiModelsState {
+  paths: {
+    sdkDir: string;
+    authPath: string;
+    projectConfigDir: string;
+    modelsPath: string;
+    settingsPath: string;
   };
-  source: ConfigSource;
+  providers: PiProviderSummary[];
+  selected: Partial<Record<ChatModelPreference, PiModelReference>>;
+  registryError: string | null;
 }
 
-export interface SetModelConfigResponse {
+export interface PiModelsMutationResponse {
   success: boolean;
-  models?: {
-    fast: string;
-    smart: string;
-    deep: string;
-  };
-  source?: ConfigSource;
+  state?: PiModelsState;
   error?: string;
+}
+
+export interface PiOAuthPromptRendererRequest {
+  requestId: string;
+  provider: string;
+  type: 'prompt' | 'manual-code';
+  message: string;
+  allowEmpty?: boolean;
 }
 
 export interface ConfigStatusResponse {
@@ -484,26 +514,27 @@ export interface ConfigBridge {
     error?: string;
   }>;
   getDefaultSystemPromptAppend: () => Promise<{ text: string }>;
-  getProvider: () => Promise<GetProviderResponse>;
-  setProvider: (provider: ModelProvider) => Promise<SetProviderResponse>;
-  getGlmConfig: () => Promise<GetGlmConfigResponse>;
-  setGlmApiKey: (apiKey: string | null) => Promise<SetGlmConfigResponse>;
-  setGlmBaseUrl: (baseUrl: string | null) => Promise<SetGlmConfigResponse>;
-  getDefaultGlmBaseUrl: () => Promise<{ baseUrl: string }>;
-  getCodexModels: () => Promise<ModelConfigResponse>;
-  setCodexModels: (models: ModelConfig) => Promise<SetModelConfigResponse>;
-  getDefaultCodexModels: () => Promise<{
-    models: { fast: string; smart: string; deep: string };
-  }>;
-  getGlmModels: () => Promise<ModelConfigResponse>;
-  setGlmModels: (models: ModelConfig) => Promise<SetModelConfigResponse>;
-  getDefaultGlmModels: () => Promise<{ models: { fast: string; smart: string; deep: string } }>;
+  getPiModelsState: () => Promise<PiModelsState>;
+  setPiProviderApiKey: (
+    provider: string,
+    apiKey: string | null
+  ) => Promise<PiModelsMutationResponse>;
+  clearPiProviderAuth: (provider: string) => Promise<PiModelsMutationResponse>;
+  loginPiOAuthProvider: (provider: string) => Promise<PiModelsMutationResponse>;
+  selectPiModelPreference: (
+    preference: ChatModelPreference,
+    provider: string,
+    modelId: string
+  ) => Promise<PiModelsMutationResponse>;
+  onPiOAuthPrompt: (callback: (request: PiOAuthPromptRendererRequest) => void) => () => void;
+  respondPiOAuthPrompt: (
+    requestId: string,
+    response: { value?: string; cancelled?: boolean }
+  ) => void;
   getAppSettings: (appId: string) => Promise<AppSettingsResponse>;
   setAppSettings: (appId: string, settings: AppSettingsPayload) => Promise<AppSettingsResponse>;
   getSkillStatus: (appId: string) => Promise<SkillStatusResponse>;
-  onWorkspaceChanged: (
-    callback: (data: { workspaceDir: string; provider: ModelProvider }) => void
-  ) => () => void;
+  onWorkspaceChanged: (callback: (data: { workspaceDir: string }) => void) => () => void;
   onFloatingNavChanged: (callback: (data: { enabled: boolean }) => void) => () => void;
 }
 
@@ -633,16 +664,19 @@ export interface AppsBridge {
       correlationId?: string;
     }) => void
   ) => () => void;
-  emit: (appId: string, event: unknown) => Promise<{
+  emit: (
+    appId: string,
+    event: unknown
+  ) => Promise<{
     success: boolean;
     deliveredTo: string[];
   }>;
   subscribe: (appId: string, pattern: string) => Promise<{ success: boolean }>;
   unsubscribe: (appId: string, pattern: string) => Promise<{ success: boolean }>;
   unsubscribeAll: (appId: string) => Promise<{ success: boolean }>;
-  getSubscriptions: (appId: string) => Promise<
-    Array<{ appId: string; pattern: string; subscribedAt: number }>
-  >;
+  getSubscriptions: (
+    appId: string
+  ) => Promise<Array<{ appId: string; pattern: string; subscribedAt: number }>>;
   onEvent: (
     appId: string,
     callback: (event: {
@@ -759,7 +793,9 @@ export interface ChatBridge {
   onToolResultComplete: (
     callback: (data: { toolUseId: string; content: string; isError?: boolean }) => void
   ) => () => void;
-  onSessionUpdated: (callback: (data: { sessionId: string; resumed: boolean }) => void) => () => void;
+  onSessionUpdated: (
+    callback: (data: { sessionId: string; resumed: boolean }) => void
+  ) => () => void;
 }
 
 // ============================================================================

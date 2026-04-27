@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import ChatHistoryDrawer from '@/components/ChatHistoryDrawer';
 import { ChatLayout } from '@/components/chat/ChatLayout';
 import { ConversationPanel } from '@/components/chat/ConversationPanel';
-import { useAutoScroll } from '@/hooks/useAutoScroll';
-import { useChatAttachments } from '@/hooks/useChatAttachments';
+import ChatHistoryDrawer from '@/components/ChatHistoryDrawer';
 import { useChatComposer } from '@/hooks/chat/useChatComposer';
 import { useChatWorkspace } from '@/hooks/chat/useChatWorkspace';
+import { useAutoScroll } from '@/hooks/useAutoScroll';
+import { useChatAttachments } from '@/hooks/useChatAttachments';
 import { useChatPersistence } from '@/hooks/useChatPersistence';
 import { useChatPreferences } from '@/hooks/useChatPreferences';
 import { usePiChat } from '@/hooks/usePiChat';
@@ -20,7 +20,7 @@ export default function Chat() {
   const appId = 'chat';
   const { messages, setMessages, isLoading, setIsLoading, contextWindowInfo } = usePiChat(appId);
   const messagesContainerRef = useAutoScroll(isLoading, messages);
-  const { workspaceDir, provider: workspaceProvider } = useChatWorkspace({
+  const { workspaceDir } = useChatWorkspace({
     onWorkspaceReset: () => {
       setMessages([]);
       setInputValue('');
@@ -51,13 +51,9 @@ export default function Chat() {
     isModelPreferenceUpdating,
     thinkingLevel,
     isThinkingLevelUpdating,
-    provider,
-    isProviderUpdating,
     missingSkills,
     handleModelPreferenceChange,
-    handleThinkingLevelChange,
-    handleProviderChange,
-    syncProvider
+    handleThinkingLevelChange
   } = useChatPreferences({
     appId,
     setMessages,
@@ -78,13 +74,6 @@ export default function Chat() {
     consumePendingAttachments,
     clearPendingAttachments
   });
-
-  useEffect(() => {
-    if (workspaceProvider) {
-      syncProvider(workspaceProvider);
-    }
-    clearPendingAttachments();
-  }, [workspaceProvider, clearPendingAttachments, syncProvider]);
 
   const handleNewChat = async () => {
     if (isLoading) return;
@@ -134,9 +123,6 @@ export default function Chat() {
           thinkingLevel={thinkingLevel}
           onThinkingLevelChange={handleThinkingLevelChange}
           isThinkingLevelUpdating={isThinkingLevelUpdating}
-          provider={provider}
-          onProviderChange={handleProviderChange}
-          isProviderUpdating={isProviderUpdating}
           contextWindowInfo={contextWindowInfo}
         />
       </ChatLayout>

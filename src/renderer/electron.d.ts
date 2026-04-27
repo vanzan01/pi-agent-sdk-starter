@@ -40,6 +40,11 @@ export type {
   AppSettingsResponse,
   SkillStatusResponse,
   ConfigSource,
+  PiModelsState,
+  PiProviderSummary,
+  PiModelSummary,
+  PiModelReference,
+  PiOAuthPromptRendererRequest,
 
   // Tool types
   ToolUse,
@@ -50,11 +55,6 @@ export type {
   ToolResultComplete,
   ThinkingStart,
   ThinkingChunk,
-
-  // Model config types
-  ModelConfig,
-  ModelConfigResponse,
-  SetModelConfigResponse,
   ConfigStatusResponse,
   MergedConfigResponse,
 
@@ -82,6 +82,7 @@ export type {
 } from '../shared/types/electron-api';
 
 export type ChatResponse = import('../shared/core').SendMessageResponse;
+export type ChatModelPreference = import('../shared/core').ChatModelPreference;
 
 declare global {
   interface Window {

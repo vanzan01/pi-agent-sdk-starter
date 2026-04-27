@@ -142,9 +142,7 @@ export default function TemplateApp() {
           <div className="relative flex items-start justify-between gap-3">
             <div className="space-y-2">
               <p className="text-xs tracking-[0.28em] text-slate-300/80 uppercase">Template App</p>
-              <h1 className="text-3xl font-semibold tracking-tight text-white">
-                Pi Codex Playground
-              </h1>
+              <h1 className="text-3xl font-semibold tracking-tight text-white">Pi Playground</h1>
               <p className="max-w-3xl text-sm text-slate-200/80">
                 A minimal, production-ready shell for new apps. Stream events are wired through{' '}
                 <span className="font-mono text-emerald-200/90">window.electron.agent</span> so you

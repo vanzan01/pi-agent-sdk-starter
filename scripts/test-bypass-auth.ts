@@ -1,8 +1,17 @@
-import { AuthStorage, createAgentSession, DefaultResourceLoader, getAgentDir, ModelRegistry, SessionManager } from '@mariozechner/pi-coding-agent';
 import { getModel } from '@mariozechner/pi-ai';
+import {
+  AuthStorage,
+  createAgentSession,
+  DefaultResourceLoader,
+  ModelRegistry,
+  SessionManager
+} from '@mariozechner/pi-coding-agent';
 
-const authStorage = AuthStorage.create();
-const modelRegistry = ModelRegistry.create(authStorage);
+import { getPiSdkTestAgentPaths } from './pi-sdk-test-paths';
+
+const paths = getPiSdkTestAgentPaths();
+const authStorage = AuthStorage.create(paths.authPath);
+const modelRegistry = ModelRegistry.create(authStorage, paths.modelsPath);
 const model = modelRegistry.find('openai-codex', 'gpt-5.4') ?? getModel('openai-codex', 'gpt-5.4');
 
 if (!model) {
@@ -11,14 +20,20 @@ if (!model) {
 }
 
 const available = await modelRegistry.getAvailable();
-if (!available.some((candidate) => candidate.provider === 'openai-codex' && candidate.id === 'gpt-5.4')) {
-  console.error('FAIL: openai-codex/gpt-5.4 is not available. Run `pi /login` and choose ChatGPT Plus/Pro (Codex).');
+if (
+  !available.some(
+    (candidate) => candidate.provider === 'openai-codex' && candidate.id === 'gpt-5.4'
+  )
+) {
+  console.error(
+    `FAIL: openai-codex/gpt-5.4 is not available in ${paths.authPath}. Configure provider OAuth in the starter-owned Pi auth store.`
+  );
   process.exit(1);
 }
 
 const loader = new DefaultResourceLoader({
   cwd: process.cwd(),
-  agentDir: getAgentDir(),
+  agentDir: paths.projectConfigDir,
   systemPromptOverride: () => 'Reply exactly as requested. Do not use tools.'
 });
 await loader.reload();
@@ -28,6 +43,7 @@ const { session } = await createAgentSession({
   model,
   authStorage,
   modelRegistry,
+  agentDir: paths.projectConfigDir,
   resourceLoader: loader,
   sessionManager: SessionManager.inMemory(),
   tools: []
@@ -40,13 +56,13 @@ const unsubscribe = session.subscribe((event) => {
   }
 });
 
-await session.prompt('Say exactly: "Pi Codex OAuth works!"');
+await session.prompt('Say exactly: "Pi SDK OAuth works!"');
 unsubscribe();
 session.dispose();
 
-if (!response.includes('Pi Codex OAuth works!')) {
+if (!response.includes('Pi SDK OAuth works!')) {
   console.error(`FAIL: Unexpected response: ${response.trim()}`);
   process.exit(1);
 }
 
-console.log('PASS: Pi SDK authenticated with OpenAI Codex OAuth and received expected response.');
+console.log('PASS: Pi SDK authenticated with provider OAuth and received expected response.');

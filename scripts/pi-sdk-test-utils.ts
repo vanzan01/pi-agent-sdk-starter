@@ -1,15 +1,29 @@
-import { AuthStorage, createAgentSession, DefaultResourceLoader, getAgentDir, ModelRegistry, SessionManager } from '@mariozechner/pi-coding-agent';
 import { getModel } from '@mariozechner/pi-ai';
+import {
+  AuthStorage,
+  createAgentSession,
+  DefaultResourceLoader,
+  ModelRegistry,
+  SessionManager
+} from '@mariozechner/pi-coding-agent';
 
-export async function runPiCodexPrompt(prompt: string, systemPrompt = 'Be concise and follow instructions exactly.', modelId = 'gpt-5.4'): Promise<string> {
-  const authStorage = AuthStorage.create();
-  const modelRegistry = ModelRegistry.create(authStorage);
-  const model = modelRegistry.find('openai-codex', modelId) ?? getModel('openai-codex', modelId as never);
+import { getPiSdkTestAgentPaths } from './pi-sdk-test-paths';
+
+export async function runPiSdkPrompt(
+  prompt: string,
+  systemPrompt = 'Be concise and follow instructions exactly.',
+  modelId = 'gpt-5.4'
+): Promise<string> {
+  const paths = getPiSdkTestAgentPaths();
+  const authStorage = AuthStorage.create(paths.authPath);
+  const modelRegistry = ModelRegistry.create(authStorage, paths.modelsPath);
+  const model =
+    modelRegistry.find('openai-codex', modelId) ?? getModel('openai-codex', modelId as never);
   if (!model) throw new Error(`Model openai-codex/${modelId} not found`);
 
   const loader = new DefaultResourceLoader({
     cwd: process.cwd(),
-    agentDir: getAgentDir(),
+    agentDir: paths.projectConfigDir,
     systemPromptOverride: () => systemPrompt
   });
   await loader.reload();
@@ -19,6 +33,7 @@ export async function runPiCodexPrompt(prompt: string, systemPrompt = 'Be concis
     model,
     authStorage,
     modelRegistry,
+    agentDir: paths.projectConfigDir,
     resourceLoader: loader,
     sessionManager: SessionManager.inMemory(),
     tools: []
