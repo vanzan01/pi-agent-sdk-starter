@@ -1,51 +1,73 @@
 # Troubleshooting
 
-## Skills not compiling
+## Skills Do Not Compile
 
-Ensure runtimes are downloaded:
-
-```bash
-node scripts/downloadRuntimeBinaries.js
-```
-
-## SQLite/native module errors
-
-Rebuild native modules:
+Run the asset build directly:
 
 ```bash
-npm run postinstall
+bun scripts/buildSkills.js
 ```
 
-## ELECTRON_RUN_AS_NODE error
-
-Remove the environment variable:
-
-- Windows: System Properties → Environment Variables → Delete ELECTRON_RUN_AS_NODE
-- Or run: `setx ELECTRON_RUN_AS_NODE ""`
-
-## Build fails on Windows
-
-Run as Administrator or enable Developer Mode.
-
-## Runtime binaries won't download
-
-Download manually from GitHub and place in `resources/`:
-
-- Windows: `bun.exe`, `uv.exe`, `git-portable/`, `msys2/`
-- macOS/Linux: `bun`, `uv`
-
-## Claude Code CLI not authenticated
-
-Run:
+If runtime binaries are missing, run:
 
 ```bash
-claude-code auth
+bun scripts/downloadRuntimeBinaries.js
 ```
 
-Then follow the prompts to log in.
+## Native Module Errors
 
-## Agent not responding
+Rebuild native Electron modules:
 
-1. Check Claude Code CLI is working: `claude-code --version`
-2. Verify your subscription is active
-3. Check network connectivity
+```bash
+bun run postinstall
+```
+
+## Pi/Codex Auth Fails
+
+Confirm Pi can authenticate outside the app:
+
+```bash
+pi
+/login
+```
+
+Choose the Codex/OpenAI login path. Then run:
+
+```bash
+bun run test:bypass-auth
+```
+
+## GLM Provider Fails
+
+Set `GLM_API_KEY` in the project `.env` file or through Settings. If you changed provider settings while the app was running, start a new session so the Pi SDK runner uses the latest configuration.
+
+## App Cannot Find Skills Or Agents
+
+Check the source tree:
+
+```bash
+Get-ChildItem .agents -Recurse
+```
+
+Then rebuild generated assets:
+
+```bash
+bun scripts/buildSkills.js
+```
+
+The generated runtime assets should appear under `out/.agents`.
+
+## Build Fails On Windows
+
+Enable Windows Developer Mode or run the terminal with the permissions required by Electron Builder. Also verify the downloaded binaries exist under `resources/`.
+
+## Runtime Binaries Do Not Download
+
+Download the required binaries manually and place them in `resources/`:
+
+- Windows: `bun.exe`, `uv.exe`, `jq.exe`, `git-portable/`, `msys2/`
+- macOS/Linux: `bun`, `uv`, `jq`
+
+## ELECTRON_RUN_AS_NODE Error
+
+Remove the environment variable from the shell or system environment, then restart the terminal.

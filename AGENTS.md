@@ -1,31 +1,32 @@
-# Codex Agent SDK Starter
+# Pi SDK Starter Kit
 
 ## Quick Start
 
 ```bash
-npm run dev          # Development mode
-npm run build        # Production build
+bun run dev
+bun run build
 ```
 
 ## Test Pipelines
 
 ```bash
-npm run test:ai-news-tweet       # 3-stage pipeline demo
-npm run test:bypass-auth         # SDK auth verification
-npm run test:context-window      # Verify 1M context window fix (SDK bug #35214)
-npm run test:context-window:bug  # Reproduce the 200k bug (no workaround)
+bun run test:ai-news-tweet
+bun run test:bypass-auth
+bun run test:context-window
+bun run test:context-window:bug
+bun run test:export
 ```
 
 ## Project Structure
 
-```
-.Codex/
-  agents/           # Agent definitions (markdown)
+```text
+.agents/
+  agents/           # App-scoped agent definitions
   skills/           # Skill definitions with scripts
-  rules/            # Auto-loaded rules for Codex
-scripts/            # Test pipelines
+docs/               # Developer docs
+scripts/            # Build, test, and runtime setup
 src/
-  main/             # Electron main process
+  main/             # Electron main process and Pi SDK session runner
   renderer/         # React frontend
   preload/          # IPC bridge
   shared/apps/      # App manifests
@@ -33,23 +34,27 @@ src/
 
 ## Demo App: ai-news-tweet
 
-3-stage pipeline: Researcher → Analyst → Writer
+Three-stage pipeline: researcher -> analyst -> writer.
 
 | Component | Path |
-|-----------|------|
-| Agents | `.Codex/agents/ai-news-tweet/` |
-| Skills | `.Codex/skills/news-tools/`, `analysis-helper/`, `tweet-writer/` |
+| --- | --- |
+| Agents | `.agents/agents/ai-news-tweet/` |
+| Skills | `.agents/skills/news-tools/`, `.agents/skills/analysis-helper/`, `.agents/skills/tweet-writer/` |
 | Test | `scripts/test-ai-news-tweet.ts` |
 
-## Key Rules (auto-loaded from .Codex/rules/)
+## Runtime Notes
 
-- **Bypass Auth**: `.Codex/rules/core/bypass-auth.md` - SDK without API key
-- **App Registration**: `.Codex/rules/development/app-registration.md` - Adding new apps
-- **Pipeline Patterns**: `.Codex/rules/architecture/pipeline-patterns.md` - Running agents
-- **IPC Security**: `.Codex/rules/architecture/ipc-security.md` - Electron security
+- Pi SDK owns the agent runtime, tool execution, streaming, state, and provider routing.
+- Codex is the default OAuth provider path.
+- GLM/Z.AI is included as an OpenAI-compatible API-key provider example.
+- Electron and React are the starter app shell, not the agent runtime.
+- Project-local non-secret settings live in `.pi-sdk/config.json`.
+- Provider secrets live in `.env`.
 
 ## Verification
 
 ```bash
-npm run lint && npm run typecheck && npm run build
+bun run typecheck
+bun run lint
+bun run build
 ```

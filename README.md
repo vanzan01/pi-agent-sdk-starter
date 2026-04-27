@@ -1,178 +1,120 @@
-# Claude Agent SDK Starter
+# Pi SDK Starter Kit
 
-[![Built with Official Claude Agent SDK](https://img.shields.io/badge/Claude%20Agent%20SDK-Official-blueviolet)](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)
+[![Built with Pi SDK](https://img.shields.io/badge/Pi%20SDK-Starter%20Kit-00bcd4)](https://www.npmjs.com/package/@mariozechner/pi-coding-agent)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> **A minimal, batteries-included starter for building AI-powered desktop apps with the official Claude Agent SDK.**
->
-> **This uses [@anthropic-ai/claude-agent-sdk](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)** - Anthropic's official SDK. Not a workaround. Not spoofing anything. The right way to build with Claude.
+> A batteries-included starter for building agentic desktop apps with Pi SDK, Codex, and OpenAI-compatible providers.
 
 ![Pi Starter SDK Overview](static/hero.jpg)
 
-## Why I Built This
+## Why This Exists
 
-I love building developer tools. Check out my other repos - I'm genuinely excited about what AI can do for developers and I want to help others build with it.
+This starter demonstrates how to build real desktop agent apps without mixing the agent runtime, provider routing, and UI shell into one hard-to-change layer.
 
-There's a lot of talk about the Claude Agent SDK but few real examples of how to build with it. This starter kit exists to:
-
-1. **Inspire builders** - Show what's possible with the SDK, not just document it
-2. **Separate pipelines from UI** - Pipelines run headlessly; the UI is just a window into them
-3. **Demonstrate built-in power** - The SDK gives apps capabilities that would take months to build from scratch
-4. **Show deterministic patterns** - Constrain agent calls with specific tools and skills for consistent, production-ready results
+1. **Separate agent runtime from UI** - Pi SDK handles agents, tools, skills, streaming, state, and model routing.
+2. **Support provider flexibility** - Use Codex OAuth or OpenAI-compatible API providers such as GLM.
+3. **Ship useful app patterns** - The demo app shows a multi-stage agent workflow with scoped skills.
+4. **Keep the starter practical** - Electron and React are the app shell, not the agent runtime.
 
 ## Demo: AI News Tweet Pipeline
 
-This demo shows **multi-agent orchestration** - three specialized agents working together. Each agent has a single job. The output of one becomes the input to the next. This is how you build reliable AI workflows.
+The demo app runs a three-stage workflow: researcher -> analyst -> writer. Each stage has a focused prompt and the pipeline verifies marked outputs instead of trusting informal model claims.
 
 ![Pipeline Flow](static/pipeline_flow.png)
 
 ```bash
-npm run test:ai-news-tweet
+bun run test:ai-news-tweet
 ```
 
 ## Quick Start
 
 **Prerequisites:**
-- [Node.js](https://nodejs.org/) v18+
-- [Claude Code CLI](https://docs.anthropic.com/en/docs/claude-code) installed and authenticated
+- Node.js v18+
+- Bun available on PATH, or use the bundled runtime after first setup
+- Pi/Codex authentication for Codex, or a provider API key for OpenAI-compatible providers
 
 ```bash
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
-That's it. No API key needed - uses your Claude Code CLI authentication. Runtime binaries (bun, uv, git, msys2) download automatically on first run.
+For Codex, sign in through Pi:
+
+```bash
+pi
+/login
+```
+
+Choose the Codex/OpenAI login path. For GLM or another OpenAI-compatible provider, configure the provider in Settings and add the required API key.
 
 ## Project Structure
 
-```
-.claude/
-  agents/ai-news-tweet/     # Agent definitions (researcher, analysis, writer)
+```text
+.agents/
+  agents/ai-news-tweet/     # Agent definitions
   skills/                   # Skill definitions with scripts
-  rules/                    # Behavior rules auto-loaded by Claude Code
-scripts/
-  downloadRuntimeBinaries.js  # Downloads bun, uv, git, msys2
-  beforeBuild.js              # Pre-build hook (downloads + copies deps)
-  dev.js                      # Dev mode launcher
-  test-ai-news-tweet.ts       # Pipeline test script
+docs/                       # Developer docs
+scripts/                    # Build, test, and runtime setup scripts
 src/
-  main/                     # Electron main process
+  main/                     # Electron main process and Pi SDK session runner
   renderer/                 # React frontend
   preload/                  # IPC bridge
   shared/apps/              # App manifests and registry
-resources/                  # Runtime binaries (gitignored)
+resources/                  # Runtime binaries downloaded on demand
 ```
+
+Project-local settings are stored in `.pi-sdk/config.json`. Secrets stay in `.env`.
 
 ## Building Your Own App
 
-1. **Copy** the `_template` app as your starting point
-2. **Configure** the manifest with your app's name, skills, and system prompt
-3. **Register** your app in the registry
-4. **Run** `npm run dev`
+1. Copy the `_template` app.
+2. Add or reuse skills under `.agents/skills`.
+3. Add app-specific agents under `.agents/agents/<app-id>` when needed.
+4. Register the app manifest and route.
+5. Run `bun run dev`.
 
-See [docs/BUILDING_APPS.md](docs/BUILDING_APPS.md) for the full guide with code examples.
+See [docs/BUILDING_APPS.md](docs/BUILDING_APPS.md) for the full guide.
 
-## Authentication
+## Providers
 
-The SDK routes through Claude Code CLI, using your existing Claude Pro/Max subscription. No API key required for personal development.
+The default provider path is Codex through Pi SDK OAuth. The starter also includes GLM/Z.AI as an OpenAI-compatible API-key provider example.
 
-### What's Allowed
+| Provider | Auth |
+| --- | --- |
+| Codex | Pi OAuth login |
+| GLM/Z.AI | `GLM_API_KEY` in project `.env` or Settings |
+| Other compatible providers | Add provider wiring and API-key settings |
 
-| Use Case | Allowed? |
-|----------|----------|
-| Personal development / learning | ✅ Yes |
-| Internal team tools (each user has their own Claude subscription) | ✅ Yes |
-| Distributed app where users bring their own API key | ✅ Yes |
-| Distributed app using YOUR subscription for all users | ❌ No |
-
-> **Policy Note:** Anthropic does not allow third-party developers to offer claude.ai login or share rate limits for their products. Each user must authenticate with their own credentials.
->
-> See the [official Agent SDK documentation](https://platform.claude.com/docs/en/agent-sdk/overview) for full details.
-
-![Claude SDK Authentication Rules](static/claude-rules.jpg)
-
-If you distribute an app to others, each user must provide their own API key via `ANTHROPIC_API_KEY`.
-
-### Alternative Providers
-
-The SDK officially supports these Claude providers:
-
-| Provider | Environment Variable |
-|----------|---------------------|
-| **Amazon Bedrock** | `CLAUDE_CODE_USE_BEDROCK=1` + AWS credentials |
-| **Google Vertex AI** | `CLAUDE_CODE_USE_VERTEX=1` + Google Cloud credentials |
-| **Microsoft Foundry** | `CLAUDE_CODE_USE_FOUNDRY=1` + Azure credentials |
-
-### Custom Endpoints
-
-The SDK supports any Anthropic-compatible API via `ANTHROPIC_BASE_URL`. Z.AI GLM is included as an example:
-
-> **Note:** Z.AI uses Zhipu AI's GLM models, not Claude. This is useful for cost savings or when Claude is unavailable in your region, but you're running a different model.
-
-Configure in Settings or via environment:
-
-```bash
-GLM_API_KEY=your-zai-api-key
-```
-
-Other Anthropic-compatible endpoints work the same way using `ANTHROPIC_BASE_URL` and `ANTHROPIC_AUTH_TOKEN`.
+Model IDs are configurable in Settings. Codex defaults use `gpt-5.4` for fast/smart and `gpt-5.5` for deep.
 
 ## Runtime Binaries
 
-The Claude Agent SDK needs certain tools to run scripts:
+The app downloads local tooling on demand:
 
 - **bun** - JavaScript runtime for skill scripts
-- **uv** - Python package manager for Python skills
-- **git + msys2** (Windows) - Shell utilities (bash, grep, sed)
+- **uv** - Python package/runtime helper for Python-based skills
+- **jq** - JSON utility
+- **git + msys2** on Windows - Shell utilities used by agent tools
 
-These download automatically on first `npm run dev`. No manual installation required.
-
-## Build for Distribution
-
-```bash
-npm run build:win    # Windows installer
-npm run build:mac    # macOS app
-```
-
-Output goes to `dist/` with all runtime binaries included.
+No global runtime install is required for packaged apps.
 
 ## Commands
 
 ```bash
-# Development
-npm run dev              # Start dev mode with hot-reload
-npm run build            # Build for production
-npm run typecheck        # Type check
-npm run lint             # Lint code
-
-# Testing
-npm run test:ai-news-tweet   # Run pipeline test
-npm run test:bypass-auth     # Test SDK authentication
-npm run test                 # Run unit tests
-
-# Build for distribution
-npm run build:win        # Windows installer
-npm run build:mac        # macOS app
+bun run dev                    # Start dev mode
+bun run build                  # Build for production
+bun run typecheck              # Type check
+bun run lint                   # Lint code
+bun run test:ai-news-tweet     # Run pipeline smoke test
+bun run test:bypass-auth       # Verify Pi/Codex auth
+bun run test:context-window    # Verify expected context windows
+bun run test:export            # Verify standalone export flow
 ```
 
 ## Troubleshooting
 
-See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues and solutions.
-
-## Questions & Compliance
-
-If you have questions about SDK usage, authentication, or compliance:
-
-1. **Open an issue** on this repo - I'm happy to help
-2. **Check the official docs** - [Agent SDK Overview](https://platform.claude.com/docs/en/agent-sdk/overview)
-3. **Contact Anthropic** - For branding or commercial licensing questions, reach out to [Anthropic's sales team](https://www.anthropic.com/contact-sales)
-
-This starter kit follows Anthropic's published guidelines. If you believe something here doesn't comply with their terms, please open an issue and I'll address it.
+See [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md).
 
 ## License
 
 MIT
-
----
-
-**Built with the [Claude Agent SDK](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)** | [Official Documentation](https://platform.claude.com/docs/en/agent-sdk/overview)
