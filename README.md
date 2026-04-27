@@ -7,7 +7,7 @@
 >
 > **This uses [@anthropic-ai/claude-agent-sdk](https://www.npmjs.com/package/@anthropic-ai/claude-agent-sdk)** - Anthropic's official SDK. Not a workaround. Not spoofing anything. The right way to build with Claude.
 
-![Claude Agent SDK Starter Overview](static/hero.jpg)
+![Pi Starter SDK Overview](static/hero.jpg)
 
 ## Why I Built This
 
