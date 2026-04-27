@@ -11,7 +11,7 @@ import type { ChatModelPreference, ModelProvider } from '../../shared/core';
  * All fields are optional - missing fields fall back to app defaults.
  *
  * All settings are stored in the project folder:
- * - .claude-sdk/config.json - Non-sensitive settings
+ * - .pi-sdk/config.json - Non-sensitive settings
  * - .env - API keys for optional non-Codex providers (GLM_API_KEY, etc.)
  */
 export interface ConfigSchema {
@@ -52,7 +52,7 @@ export interface ConfigSchema {
 /**
  * Source indicator for where a config value came from.
  * - 'default': Built-in app default
- * - 'project': From .claude-sdk/config.json in workspace
+ * - 'project': From .pi-sdk/config.json in workspace
  * - 'env': From environment variable or .env file
  */
 export type ConfigSource = 'default' | 'project' | 'env';
@@ -66,7 +66,7 @@ export interface ConfigValue<T> {
 }
 
 // Project config directory name
-const PROJECT_CONFIG_DIR = '.claude-sdk';
+const PROJECT_CONFIG_DIR = '.pi-sdk';
 const PROJECT_CONFIG_FILE = 'config.json';
 
 // Cache for current project directory
@@ -74,7 +74,7 @@ let currentProjectDir: string | null = null;
 
 /**
  * Gets the path to the project config directory.
- * Location: <projectDir>/.claude-sdk/
+ * Location: <projectDir>/.pi-sdk/
  */
 export function getProjectConfigDir(projectDir: string): string {
   return join(projectDir, PROJECT_CONFIG_DIR);
@@ -82,7 +82,7 @@ export function getProjectConfigDir(projectDir: string): string {
 
 /**
  * Gets the path to the project config file.
- * Location: <projectDir>/.claude-sdk/config.json
+ * Location: <projectDir>/.pi-sdk/config.json
  */
 export function getProjectConfigPath(projectDir: string): string {
   return join(getProjectConfigDir(projectDir), PROJECT_CONFIG_FILE);
@@ -112,7 +112,7 @@ export function getCurrentProjectDir(): string | null {
 }
 
 /**
- * Loads the project config from <projectDir>/.claude-sdk/config.json.
+ * Loads the project config from <projectDir>/.pi-sdk/config.json.
  */
 export function loadProjectConfig(projectDir: string): ConfigSchema {
   try {
@@ -128,15 +128,15 @@ export function loadProjectConfig(projectDir: string): ConfigSchema {
 }
 
 /**
- * Saves to the project config in <projectDir>/.claude-sdk/config.json.
- * Creates the .claude-sdk directory if it doesn't exist.
+ * Saves to the project config in <projectDir>/.pi-sdk/config.json.
+ * Creates the .pi-sdk directory if it doesn't exist.
  */
 export async function saveProjectConfig(projectDir: string, config: ConfigSchema): Promise<void> {
   try {
     const configDir = getProjectConfigDir(projectDir);
     const configPath = getProjectConfigPath(projectDir);
 
-    // Create .claude-sdk directory if it doesn't exist
+    // Create .pi-sdk directory if it doesn't exist
     if (!existsSync(configDir)) {
       await mkdir(configDir, { recursive: true });
     }
@@ -352,7 +352,7 @@ export function getMergedConfig(projectDir?: string | null): {
 }
 
 /**
- * Checks if a project has a .claude-sdk config directory.
+ * Checks if a project has a .pi-sdk config directory.
  */
 export function hasProjectConfig(projectDir: string): boolean {
   return existsSync(getProjectConfigDir(projectDir));
@@ -360,7 +360,7 @@ export function hasProjectConfig(projectDir: string): boolean {
 
 /**
  * Initializes a new project config directory.
- * Creates .claude-sdk/ folder and adds it to .gitignore.
+ * Creates .pi-sdk/ folder and adds it to .gitignore.
  */
 export async function initProjectConfig(projectDir: string): Promise<void> {
   const configDir = getProjectConfigDir(projectDir);
@@ -380,7 +380,7 @@ export async function initProjectConfig(projectDir: string): Promise<void> {
 }
 
 /**
- * Ensures .claude-sdk/config.json is in .gitignore.
+ * Ensures .pi-sdk/config.json is in .gitignore.
  * Only modifies .gitignore if the project is a git repo.
  */
 async function ensureGitignore(projectDir: string): Promise<void> {

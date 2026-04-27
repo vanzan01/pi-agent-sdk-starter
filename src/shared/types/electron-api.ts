@@ -70,7 +70,7 @@ export interface DiagnosticMetadataResponse {
   chromiumVersion: string;
   v8Version: string;
   nodeVersion: string;
-  claudeAgentSdkVersion: string;
+  piSdkVersion: string;
   platform: string;
   arch: string;
   osRelease: string;

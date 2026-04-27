@@ -145,8 +145,8 @@ const FEATURE_MODULES: Record<AppFeature, FeatureModule> = {
     ],
     libs: [
       'conversation-db.ts',
-      // Note: claude-session.ts is NOT excluded because config-handlers.ts depends on it
-      // Note: message-queue.ts is NOT excluded because claude-session.ts depends on it
+      // Note: pi-session.ts is NOT excluded because config-handlers.ts depends on it
+      // Note: message-queue.ts is NOT excluded because pi-session.ts depends on it
       'session/',
       'url-extractor.ts'
     ],
@@ -655,16 +655,16 @@ export async function generateExportPreview(config: ExportConfig): Promise<Expor
   }
 
   // 8. Collect additional .agents assets declared by apps
-  const claudeAssets = new Set<string>();
+  const agentAssets = new Set<string>();
   for (const appId of config.selectedAppIds) {
     const appManifest = getAppById(appId);
-    if (appManifest?.claudeAssets) {
-      for (const asset of appManifest.claudeAssets) {
-        claudeAssets.add(asset);
+    if (appManifest?.agentAssets) {
+      for (const asset of appManifest.agentAssets) {
+        agentAssets.add(asset);
       }
     }
   }
-  for (const asset of claudeAssets) {
+  for (const asset of agentAssets) {
     const assetPath = `.agents/${asset}`;
     const assetFullPath = join(projectRoot, assetPath);
     if (existsSync(assetFullPath)) {

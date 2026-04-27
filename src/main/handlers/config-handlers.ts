@@ -6,9 +6,9 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { THINKING_LEVELS, THINKING_PRESETS, type ThinkingLevel } from '../../shared/constants';
 import { DEFAULT_GLM_BASE_URL, type ModelProvider } from '../../shared/core';
 import { getSkillStatus } from '../core/skills';
-import { resetSession } from '../lib/claude-session';
+import { resetSession } from '../lib/pi-session';
 import {
-  buildagentSessionEnv,
+  buildPiSessionEnv,
   buildEnhancedPath,
   DEFAULT_CODEX_MODELS,
   DEFAULT_GLM_MODELS,
@@ -48,7 +48,7 @@ import {
 
 const requireModule = createRequire(import.meta.url);
 
-function getagentAgentSdkVersion(): string {
+function getPiSdkVersion(): string {
   try {
     // Try to resolve the Pi SDK package.json
     const sdkPackagePath = requireModule.resolve('@mariozechner/pi-coding-agent/package.json');
@@ -253,7 +253,7 @@ export function registerConfigHandlers(): void {
     };
 
     // Use the same environment builder as app sessions to ensure consistency
-    const env = buildagentSessionEnv();
+    const env = buildPiSessionEnv();
 
     const envVars: Array<{ key: string; value: string }> = [];
     for (const [key, value] of Object.entries(env)) {
@@ -279,7 +279,7 @@ export function registerConfigHandlers(): void {
       chromiumVersion: process.versions.chrome,
       v8Version: process.versions.v8,
       nodeVersion: process.versions.node,
-      claudeAgentSdkVersion: getagentAgentSdkVersion(),
+      piSdkVersion: getPiSdkVersion(),
       platform: process.platform,
       arch: process.arch,
       osRelease: release(),

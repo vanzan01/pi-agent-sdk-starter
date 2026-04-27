@@ -38,7 +38,7 @@ export function WorkspaceSettingsPanel({
           </h2>
           <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
             Directory where files are read and written. All settings are stored in this
-            workspace&apos;s <code>.claude-sdk/config.json</code>.
+            workspace&apos;s <code>.pi-sdk/config.json</code>.
           </p>
         </div>
         {currentWorkspaceDir && (

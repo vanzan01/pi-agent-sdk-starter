@@ -51,7 +51,7 @@ export type AppManifest = {
   hidden?: boolean; // Hide from launcher (e.g. _template)
   features?: AppFeature[]; // Required features for export optimization
   sharedDirs?: string[]; // Additional directories to include in export (e.g. ['src/shared/finance'])
-  claudeAssets?: string[]; // Additional .agents assets to include (e.g. ['templates/my-template'])
+  agentAssets?: string[]; // Additional .agents assets to include (e.g. ['templates/my-template'])
 
   // Background behavior
   canRunInBackground?: boolean; // App CAN run in background (user must enable in Settings)

@@ -20,7 +20,7 @@ let cachedWorkspaceDir: string | null = null;
 
 function getConfigDir(): string {
   const workspaceDir = getWorkspaceDir();
-  const configDir = join(workspaceDir, '.claude-sdk');
+  const configDir = join(workspaceDir, '.pi-sdk');
   if (!existsSync(configDir)) {
     mkdirSync(configDir, { recursive: true });
   }

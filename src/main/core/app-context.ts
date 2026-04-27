@@ -4,7 +4,7 @@ import {
   type AgentDefinition,
   type AppManifest
 } from '../../shared/apps';
-import { setActiveAppContext } from '../lib/claude-session';
+import { setActiveAppContext } from '../lib/pi-session';
 import { getAppSettings } from '../lib/config';
 import { getAgentsForApp } from './agents';
 import { buildSystemPromptAppend } from './ai-client';

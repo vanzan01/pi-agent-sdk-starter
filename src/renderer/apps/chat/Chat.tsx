@@ -9,7 +9,7 @@ import { useChatComposer } from '@/hooks/chat/useChatComposer';
 import { useChatWorkspace } from '@/hooks/chat/useChatWorkspace';
 import { useChatPersistence } from '@/hooks/useChatPersistence';
 import { useChatPreferences } from '@/hooks/useChatPreferences';
-import { usePiChat } from '@/hooks/useClaudeChat';
+import { usePiChat } from '@/hooks/usePiChat';
 
 import { MAX_ATTACHMENT_BYTES } from '../../../shared/core';
 

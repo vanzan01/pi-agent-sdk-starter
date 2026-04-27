@@ -20,7 +20,7 @@ interface DiagnosticMetadata {
   chromiumVersion: string;
   v8Version: string;
   nodeVersion: string;
-  claudeAgentSdkVersion: string;
+  piSdkVersion: string;
   platform: string;
   arch: string;
   osRelease: string;
@@ -154,7 +154,7 @@ export function DebugSettingsPanel({
                 <DebugInfoRow label="Node.js Version" value={diagnosticMetadata.nodeVersion} />
                 <DebugInfoRow
                   label="Pi SDK Version"
-                  value={diagnosticMetadata.claudeAgentSdkVersion}
+                  value={diagnosticMetadata.piSdkVersion}
                 />
                 <DebugInfoRow
                   label="Platform"

@@ -20,7 +20,7 @@ import {
   resetSession,
   runSingleAgentCall,
   setChatModelPreference
-} from '../lib/claude-session';
+} from '../lib/pi-session';
 import { getGlmApiKey, getProvider, getWorkspaceDir } from '../lib/config';
 
 export function registerChatHandlers(getMainWindow: () => BrowserWindow | null): void {

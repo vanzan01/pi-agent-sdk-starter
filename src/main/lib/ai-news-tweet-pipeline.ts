@@ -1,7 +1,7 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
 import type { BrowserWindow } from 'electron';
-import { runSingleAgentCall } from './claude-session';
+import { runSingleAgentCall } from './pi-session';
 import { getWorkspaceDir } from './config';
 import { loadSkillYaml, type SkillMetadata } from './utils/load-skill';
 

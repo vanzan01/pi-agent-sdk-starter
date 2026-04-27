@@ -117,7 +117,7 @@ function saveWorkspaceState(state: WorkspaceState): void {
 
 /**
  * Gets the workspace directory.
- * Returns the last used workspace, or default Desktop/claude-sdk if none set.
+ * Returns the last used workspace, or default Desktop/pi-sdk if none set.
  * Also ensures the current project directory is set for layered config.
  */
 export function getWorkspaceDir(): string {
@@ -126,8 +126,8 @@ export function getWorkspaceDir(): string {
   if (state.lastWorkspaceDir && existsSync(state.lastWorkspaceDir)) {
     dir = state.lastWorkspaceDir;
   } else {
-    // Default to Desktop/claude-sdk
-    dir = join(app.getPath('desktop'), 'claude-sdk');
+    // Default to Desktop/pi-sdk
+    dir = join(app.getPath('desktop'), 'pi-sdk');
   }
   // Ensure current project dir is set for layered config
   // This is important for settings to work before the user changes workspace
@@ -222,7 +222,7 @@ function normalizeThinkingLevel(level: unknown): ThinkingLevel {
     case 'high':
     case 'xhigh':
       return level;
-    // Legacy names from the Claude-oriented UI.
+    // Legacy names from the legacy UI.
     case 'light':
       return 'low';
     case 'balanced':
@@ -759,29 +759,16 @@ export function buildEnhancedPath(): string {
  * Builds the complete environment object used by local tools and debug panels.
  * Codex OAuth is handled by Pi SDK AuthStorage, not environment variables.
  */
-export function buildagentSessionEnv(): Record<string, string> {
+export function buildPiSessionEnv(): Record<string, string> {
   const enhancedPath = buildEnhancedPath();
   const workspaceDir = getWorkspaceDir();
   const provider = getProvider();
 
-  // Start with process.env but we'll explicitly remove/override API-related vars
-  // to prevent any accidental fallback between providers
+  // Start with process.env but explicitly set provider-specific values below.
   const env: Record<string, string> = {
     ...process.env,
     PATH: enhancedPath
   };
-
-  // Never pass unrelated provider credentials or legacy routing through spawned tools.
-  delete env.ANTHROPIC_API_KEY;
-  delete env.ANTHROPIC_AUTH_TOKEN;
-  delete env.ANTHROPIC_BASE_URL;
-  delete env.ANTHROPIC_DEFAULT_HAIKU_MODEL;
-  delete env.ANTHROPIC_DEFAULT_SONNET_MODEL;
-  delete env.ANTHROPIC_DEFAULT_OPUS_MODEL;
-  delete env.CLAUDE_CODE_GIT_BASH_PATH;
-  delete env.CLAUDE_CODE_USE_BEDROCK;
-  delete env.CLAUDE_CODE_USE_VERTEX;
-  delete env.CLAUDE_CODE_USE_FOUNDRY;
 
   // Configure API key and base URL based on provider
   if (provider === 'glm') {

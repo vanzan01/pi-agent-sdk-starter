@@ -1,7 +1,7 @@
-import { buildagentSessionEnv, getSystemPromptAppend } from '../lib/config';
+import { buildPiSessionEnv, getSystemPromptAppend } from '../lib/config';
 
 export function buildSessionEnv() {
-  return buildagentSessionEnv();
+  return buildPiSessionEnv();
 }
 
 export function getGlobalSystemAppend(): string {

@@ -7,7 +7,7 @@ import {
   resetSession,
   startStreamingSession,
   waitForSessionReady
-} from '../lib/claude-session';
+} from '../lib/pi-session';
 import { getGlmApiKey, getProvider } from '../lib/config';
 import { messageQueue } from '../lib/message-queue';
 import { buildSystemPromptAppend } from './ai-client';
