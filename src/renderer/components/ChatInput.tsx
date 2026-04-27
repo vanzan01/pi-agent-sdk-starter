@@ -334,7 +334,7 @@ export default function ChatInput({
             }}
             onInput={handleTextareaInput}
           />
-          <div className="flex flex-wrap items-center justify-between gap-3 px-2 pt-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-2 px-2 pt-2">
             <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
@@ -473,10 +473,9 @@ export default function ChatInput({
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              {contextWindowInfo && (
+            {contextWindowInfo && (
                 <div
-                  className="flex items-center gap-1.5 rounded-full bg-[var(--user-bubble)] px-2.5 py-1 text-xs text-[var(--text-tertiary)]"
+                  className="col-start-1 row-start-2 flex w-fit max-w-full items-center gap-1.5 rounded-full bg-[var(--user-bubble)] px-2.5 py-1 text-xs whitespace-nowrap text-[var(--text-tertiary)]"
                   title={`${contextWindowInfo.model}${contextWindowInfo.thinkingLevel ? ` · ${contextWindowInfo.thinkingLevel}` : ''} — ${contextTokensUsed.toLocaleString()} tokens used, ${contextTokensRemaining.toLocaleString()} remaining of ${contextWindow.toLocaleString()} context${typeof contextWindowInfo.totalInputTokens === 'number' ? ` · input ${contextWindowInfo.totalInputTokens.toLocaleString()}` : ''}${typeof contextWindowInfo.totalOutputTokens === 'number' ? ` · output ${contextWindowInfo.totalOutputTokens.toLocaleString()}` : ''}${displayCost ? ` · ${displayCost}` : ''}`}
                 >
                   <Gauge className="h-3 w-3" />
@@ -499,7 +498,7 @@ export default function ChatInput({
                 isLoading && onStopStreaming ?
                   'bg-[var(--user-bubble)] text-[var(--text-primary)] hover:bg-[var(--border-light)]'
                 : 'bg-[var(--accent-coral)] text-white hover:bg-[var(--accent-coral-dark)]'
-              }`}
+              } col-start-2 row-start-1 row-span-2 self-end justify-self-end`}
             >
               {isLoading ?
                 onStopStreaming ?
@@ -507,7 +506,6 @@ export default function ChatInput({
                 : <Loader2 className="h-5 w-5 animate-spin" />
               : <ArrowUp className="h-5 w-5" />}
             </button>
-            </div>
           </div>
         </div>
       </div>
