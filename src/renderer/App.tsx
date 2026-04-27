@@ -48,7 +48,15 @@ function getEffectiveLayoutMode(app: AppManifest | undefined): LayoutMode {
 
 export default function App() {
   const apps = useMemo(() => getAllApps(), []);
+  const visibleApps = useMemo(() => apps.filter((app) => !app.hidden), [apps]);
   const defaultApp = useMemo(() => getDefaultApp(), []);
+  const resolveVisibleApp = useCallback(
+    (appId: string | null | undefined) => {
+      const targetApp = appId ? apps.find((app) => app.id === appId && !app.hidden) : null;
+      return targetApp ?? defaultApp;
+    },
+    [apps, defaultApp]
+  );
   const [activeAppId, setActiveAppId] = useState<string>(defaultApp.id);
   const [activeDomainId, setActiveDomainId] = useState<string | null>(null);
   const [showLauncher, setShowLauncher] = useState(true);
@@ -107,7 +115,7 @@ export default function App() {
             appIdFromUrl && domain.appIds.includes(appIdFromUrl) ?
               appIdFromUrl
             : domain.primaryAppId;
-          const targetApp = getAppById(validAppId) ?? defaultApp;
+          const targetApp = resolveVisibleApp(validAppId);
           setActiveAppId(targetApp.id);
           setActiveDomainId(domainId);
           setShowLauncher(false);
@@ -126,9 +134,9 @@ export default function App() {
         // Check if it's the special "domains" tab
         if (maybeTabOrAppId === 'domains') {
           setSettingsInitialTab('domains');
-          setSettingsAppId(activeAppId);
+          setSettingsAppId(resolveVisibleApp(activeAppId).id);
         } else {
-          const targetApp = getAppById(maybeTabOrAppId ?? activeAppId) ?? defaultApp;
+          const targetApp = resolveVisibleApp(maybeTabOrAppId ?? activeAppId);
           setActiveAppId(targetApp.id);
           setSettingsAppId(targetApp.id);
           setSettingsInitialTab(null);
@@ -146,7 +154,7 @@ export default function App() {
       if (normalized.startsWith('popout/')) {
         const parts = normalized.split('/').filter(Boolean);
         const maybeAppId = parts[1];
-        const targetApp = getAppById(maybeAppId) ?? defaultApp;
+        const targetApp = resolveVisibleApp(maybeAppId);
         setActiveAppId(targetApp.id);
         setShowLauncher(false);
         setShowSettings(false);
@@ -160,7 +168,7 @@ export default function App() {
         const parts = normalized.split('/').filter(Boolean);
         const forcedMode = parts[0] as LayoutMode;
         const maybeAppId = parts[1];
-        const targetApp = getAppById(maybeAppId) ?? defaultApp;
+        const targetApp = resolveVisibleApp(maybeAppId);
         setActiveAppId(targetApp.id);
         setShowLauncher(false);
         setShowSettings(false);
@@ -171,7 +179,7 @@ export default function App() {
 
       // Handle standard app routes
       const routeMatch = getAppByRoute(`/${normalized}`) ?? getAppByRoute(normalized);
-      if (routeMatch) {
+      if (routeMatch && !routeMatch.hidden) {
         setActiveAppId(routeMatch.id);
         setShowLauncher(false);
         setShowSettings(false);
@@ -179,15 +187,31 @@ export default function App() {
         setIsPopoutMode(false);
         return;
       }
+      if (routeMatch?.hidden) {
+        setShowLauncher(false);
+        setShowSettings(false);
+        setLayoutModeOverride(null);
+        setIsPopoutMode(false);
+        window.location.hash = defaultApp.rootRoute;
+        return;
+      }
 
       const appMatch = getAppById(normalized);
-      if (appMatch) {
+      if (appMatch && !appMatch.hidden) {
         setActiveAppId(appMatch.id);
         setShowLauncher(false);
         setShowSettings(false);
         setLayoutModeOverride(null);
         setIsPopoutMode(false);
         window.location.hash = appMatch.rootRoute;
+        return;
+      }
+      if (appMatch?.hidden) {
+        setShowLauncher(false);
+        setShowSettings(false);
+        setLayoutModeOverride(null);
+        setIsPopoutMode(false);
+        window.location.hash = defaultApp.rootRoute;
         return;
       }
 
@@ -202,7 +226,7 @@ export default function App() {
     // Listen for navigation events from main process
     const unsubscribeNavigate = window.electron.onNavigate((view: string) => {
       if (view === 'settings') {
-        const target = activeAppId || defaultApp.id;
+        const target = resolveVisibleApp(activeAppId).id;
         setSettingsAppId(target);
         setShowSettings(true);
         window.location.hash = `/settings/${target}`;
@@ -213,7 +237,7 @@ export default function App() {
         window.location.hash = '';
       } else {
         setShowSettings(false);
-        window.location.hash = getAppById(activeAppId)?.rootRoute ?? defaultApp.rootRoute;
+        window.location.hash = resolveVisibleApp(activeAppId).rootRoute;
       }
     });
 
@@ -224,17 +248,16 @@ export default function App() {
       unsubscribeNavigate();
       window.removeEventListener('hashchange', parseHash);
     };
-  }, [activeAppId, defaultApp, getDomain]);
+  }, [activeAppId, defaultApp, getDomain, resolveVisibleApp]);
 
-  const activeApp: AppManifest | undefined =
-    apps.find((app) => app.id === activeAppId) ?? defaultApp;
+  const activeApp: AppManifest | undefined = resolveVisibleApp(activeAppId);
 
   // Calculate effective layout mode (override > stored > manifest default)
   const effectiveLayoutMode: LayoutMode = layoutModeOverride ?? getEffectiveLayoutMode(activeApp);
 
   const handleSelectApp = useCallback(
     (appId: string) => {
-      const targetApp = getAppById(appId) ?? defaultApp;
+      const targetApp = resolveVisibleApp(appId);
       addRecentApp(targetApp.id);
       setActiveAppId(targetApp.id);
       setShowLauncher(false);
@@ -243,7 +266,7 @@ export default function App() {
       window.location.hash = targetApp.rootRoute;
       setShowSettings(false);
     },
-    [defaultApp]
+    [resolveVisibleApp]
   );
 
   const handleSelectDomain = useCallback(
@@ -251,7 +274,7 @@ export default function App() {
       const domain = getDomain(domainId);
       if (!domain) return;
 
-      const targetApp = getAppById(domain.primaryAppId) ?? defaultApp;
+      const targetApp = resolveVisibleApp(domain.primaryAppId);
       addRecentApp(targetApp.id);
       setActiveAppId(targetApp.id);
       setActiveDomainId(domainId);
@@ -260,13 +283,13 @@ export default function App() {
       window.location.hash = `/domain/${domainId}/${targetApp.id}`;
       setShowSettings(false);
     },
-    [defaultApp, getDomain]
+    [getDomain, resolveVisibleApp]
   );
 
   // Switch apps while staying within the current domain
   const handleSelectAppInDomain = useCallback(
     (appId: string) => {
-      const targetApp = getAppById(appId) ?? defaultApp;
+      const targetApp = resolveVisibleApp(appId);
       addRecentApp(targetApp.id);
       setActiveAppId(targetApp.id);
       // Keep activeDomainId unchanged - stay in the domain
@@ -278,18 +301,18 @@ export default function App() {
         window.location.hash = `/domain/${activeDomainId}/${targetApp.id}`;
       }
     },
-    [defaultApp, activeDomainId]
+    [resolveVisibleApp, activeDomainId]
   );
 
   const handleOpenSettings = useCallback(
     (appId?: string, tab?: string) => {
-      const targetApp = getAppById(appId || activeAppId) ?? defaultApp;
+      const targetApp = resolveVisibleApp(appId || activeAppId);
       setSettingsAppId(targetApp.id);
       setSettingsInitialTab(tab ?? null);
       setShowSettings(true);
       window.location.hash = tab ? `/settings/${tab}` : `/settings/${targetApp.id}`;
     },
-    [activeAppId, defaultApp]
+    [activeAppId, resolveVisibleApp]
   );
 
   const handleToggleLayoutMode = useCallback(() => {
@@ -310,13 +333,13 @@ export default function App() {
 
   const handleExitDomain = useCallback(() => {
     // Stay in current app view, just exit domain context
-    const currentApp = getAppById(activeAppId) ?? defaultApp;
+    const currentApp = resolveVisibleApp(activeAppId);
     setActiveDomainId(null);
     setShowLauncher(false); // Stay in app view
     setShowSettings(false);
     setLayoutModeOverride(null);
     window.location.hash = currentApp.rootRoute;
-  }, [activeAppId, defaultApp]);
+  }, [activeAppId, resolveVisibleApp]);
 
   // Check if the current app allows mode toggle
   const canToggleMode = activeApp?.layout?.allowModeToggle !== false;
@@ -376,7 +399,7 @@ export default function App() {
           className="relative"
           style={{ height: effectiveLayoutMode === 'standard' ? 'calc(100% - 73px)' : '100%' }}
         >
-          {apps.map((app) => (
+          {visibleApps.map((app) => (
             <div
               key={app.id}
               className={`absolute inset-0 ${
@@ -431,7 +454,7 @@ export default function App() {
 
       {showSettings && (
         <Settings
-          apps={apps}
+          apps={visibleApps}
           activeAppId={settingsAppId ?? activeApp?.id ?? defaultApp.id}
           initialTab={settingsInitialTab}
           onBack={() => {

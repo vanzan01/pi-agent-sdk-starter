@@ -28,6 +28,7 @@ interface SettingsProps {
 
 
 function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: SettingsProps) {
+  const visibleApps = useMemo(() => apps.filter((app) => !app.hidden), [apps]);
   const {
     configStatus,
     currentWorkspaceDir,
@@ -107,8 +108,8 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
   } = usePromptSettings();
 
   const selectedApp = useMemo(
-    () => apps.find((app) => app.id === selectedTab),
-    [apps, selectedTab]
+    () => visibleApps.find((app) => app.id === selectedTab),
+    [visibleApps, selectedTab]
   );
   const AppSettingsPanel = useMemo(
     () => getAppSettingsPanel(selectedApp),
@@ -116,7 +117,10 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
   );
 
   // Check if any app has the 'chat' feature - used to show/hide chat-related global settings
-  const hasAnyChatApp = useMemo(() => apps.some((app) => app.features?.includes('chat')), [apps]);
+  const hasAnyChatApp = useMemo(
+    () => visibleApps.some((app) => app.features?.includes('chat')),
+    [visibleApps]
+  );
 
   useSettingsShortcuts({ onBack });
 
@@ -172,7 +176,7 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
                 <Layers className="h-3.5 w-3.5" />
                 Domains
               </button>
-              {apps.map((app) => (
+              {visibleApps.map((app) => (
                 <button
                   key={app.id}
                   type="button"
