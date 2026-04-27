@@ -71,6 +71,10 @@ export interface DiagnosticMetadataResponse {
   v8Version: string;
   nodeVersion: string;
   piSdkVersion: string;
+  piAgentDir: string;
+  piAuthPath: string;
+  piModelsPath: string;
+  piSettingsPath: string;
   platform: string;
   arch: string;
   osRelease: string;
@@ -633,16 +637,19 @@ export interface AppsBridge {
       correlationId?: string;
     }) => void
   ) => () => void;
-  emit: (appId: string, event: unknown) => Promise<{
+  emit: (
+    appId: string,
+    event: unknown
+  ) => Promise<{
     success: boolean;
     deliveredTo: string[];
   }>;
   subscribe: (appId: string, pattern: string) => Promise<{ success: boolean }>;
   unsubscribe: (appId: string, pattern: string) => Promise<{ success: boolean }>;
   unsubscribeAll: (appId: string) => Promise<{ success: boolean }>;
-  getSubscriptions: (appId: string) => Promise<
-    Array<{ appId: string; pattern: string; subscribedAt: number }>
-  >;
+  getSubscriptions: (
+    appId: string
+  ) => Promise<Array<{ appId: string; pattern: string; subscribedAt: number }>>;
   onEvent: (
     appId: string,
     callback: (event: {
@@ -759,7 +766,9 @@ export interface ChatBridge {
   onToolResultComplete: (
     callback: (data: { toolUseId: string; content: string; isError?: boolean }) => void
   ) => () => void;
-  onSessionUpdated: (callback: (data: { sessionId: string; resumed: boolean }) => void) => () => void;
+  onSessionUpdated: (
+    callback: (data: { sessionId: string; resumed: boolean }) => void
+  ) => () => void;
 }
 
 // ============================================================================

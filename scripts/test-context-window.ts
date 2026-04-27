@@ -1,7 +1,10 @@
 import { AuthStorage, ModelRegistry } from '@mariozechner/pi-coding-agent';
 
-const authStorage = AuthStorage.create();
-const modelRegistry = ModelRegistry.create(authStorage);
+import { getPiSdkTestAgentPaths } from './pi-sdk-test-paths';
+
+const paths = getPiSdkTestAgentPaths();
+const authStorage = AuthStorage.create(paths.authPath);
+const modelRegistry = ModelRegistry.create(authStorage, paths.modelsPath);
 const available = await modelRegistry.getAvailable();
 
 const required = [
@@ -11,7 +14,9 @@ const required = [
 
 let failed = false;
 for (const expected of required) {
-  const model = available.find((candidate) => candidate.provider === expected.provider && candidate.id === expected.id);
+  const model = available.find(
+    (candidate) => candidate.provider === expected.provider && candidate.id === expected.id
+  );
   if (!model) {
     console.error(`FAIL: ${expected.provider}/${expected.id} is not available via Pi SDK auth`);
     failed = true;
@@ -19,7 +24,9 @@ for (const expected of required) {
   }
   console.log(`${expected.provider}/${expected.id}: contextWindow=${model.contextWindow}`);
   if ((model.contextWindow ?? 0) < expected.minContext) {
-    console.error(`FAIL: ${expected.provider}/${expected.id} context window is below ${expected.minContext}`);
+    console.error(
+      `FAIL: ${expected.provider}/${expected.id} context window is below ${expected.minContext}`
+    );
     failed = true;
   }
 }

@@ -16,6 +16,7 @@
     "test": "node scripts/run-bun.js test",
     "test:ai-news-tweet": "node scripts/run-bun.js run scripts/test-ai-news-tweet.ts",
     "test:bypass-auth": "node scripts/run-bun.js run scripts/test-bypass-auth.ts",
+    "test:embedded-pi-runtime": "node scripts/run-bun.js run scripts/test-embedded-pi-runtime.ts",
     "test:export": "node scripts/run-bun.js run scripts/test-export.ts",
     "test:extended-context": "node scripts/run-bun.js run scripts/test-extended-context.ts",
     "test:context-window": "node scripts/run-bun.js run scripts/test-context-window.ts",

@@ -1,5 +1,6 @@
-import type { ConfigSource } from '@/electron';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+
+import type { ConfigSource } from '@/electron';
 
 interface PathInfo {
   platform: string;
@@ -21,6 +22,10 @@ interface DiagnosticMetadata {
   v8Version: string;
   nodeVersion: string;
   piSdkVersion: string;
+  piAgentDir: string;
+  piAuthPath: string;
+  piModelsPath: string;
+  piSettingsPath: string;
   platform: string;
   arch: string;
   osRelease: string;
@@ -93,16 +98,16 @@ export function DebugSettingsPanel({
             : 'bg-neutral-100 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400'
           }`}
         >
-          {debugModeSource === 'env' ? 'Environment'
-          : debugModeSource === 'project' ? 'Project'
+          {debugModeSource === 'env' ?
+            'Environment'
+          : debugModeSource === 'project' ?
+            'Project'
           : 'Default'}
         </span>
       </div>
       <div className="flex items-center justify-between gap-4 rounded-2xl border border-neutral-200/80 bg-neutral-50 px-4 py-3 dark:border-neutral-800 dark:bg-neutral-900/50">
         <div className="flex flex-col gap-1">
-          <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">
-            Debug Mode
-          </p>
+          <p className="text-sm font-semibold text-neutral-900 dark:text-neutral-100">Debug Mode</p>
           <p className="text-xs text-neutral-500 dark:text-neutral-400">
             {debugMode ? 'Debug logging is enabled.' : 'Debug logging is disabled.'}
           </p>
@@ -133,7 +138,9 @@ export function DebugSettingsPanel({
         className="flex w-full items-center justify-between rounded-2xl border border-neutral-200/80 bg-neutral-50 px-4 py-3 text-left text-sm font-semibold text-neutral-700 transition-colors hover:border-neutral-300 dark:border-neutral-800 dark:bg-neutral-900/50 dark:text-neutral-100 dark:hover:border-neutral-700/60"
       >
         <span>Developer / Debug Info</span>
-        {isDebugExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+        {isDebugExpanded ?
+          <ChevronUp className="h-4 w-4" />
+        : <ChevronDown className="h-4 w-4" />}
       </button>
 
       {isDebugExpanded && (
@@ -152,10 +159,11 @@ export function DebugSettingsPanel({
                 <DebugInfoRow label="Chromium Version" value={diagnosticMetadata.chromiumVersion} />
                 <DebugInfoRow label="V8 Version" value={diagnosticMetadata.v8Version} />
                 <DebugInfoRow label="Node.js Version" value={diagnosticMetadata.nodeVersion} />
-                <DebugInfoRow
-                  label="Pi SDK Version"
-                  value={diagnosticMetadata.piSdkVersion}
-                />
+                <DebugInfoRow label="Pi SDK Version" value={diagnosticMetadata.piSdkVersion} />
+                <DebugInfoRow label="Pi Agent Directory" value={diagnosticMetadata.piAgentDir} />
+                <DebugInfoRow label="Pi Auth File" value={diagnosticMetadata.piAuthPath} />
+                <DebugInfoRow label="Pi Models File" value={diagnosticMetadata.piModelsPath} />
+                <DebugInfoRow label="Pi Settings File" value={diagnosticMetadata.piSettingsPath} />
                 <DebugInfoRow
                   label="Platform"
                   value={`${diagnosticMetadata.platform} (${diagnosticMetadata.arch})`}
@@ -203,7 +211,9 @@ export function DebugSettingsPanel({
                   </div>
                 </div>
               </div>
-            : <p className="text-xs text-neutral-600 dark:text-neutral-400">Failed to load PATH info</p>
+            : <p className="text-xs text-neutral-600 dark:text-neutral-400">
+                Failed to load PATH info
+              </p>
             }
           </div>
 
@@ -234,7 +244,9 @@ export function DebugSettingsPanel({
                           {envVar.key}
                         </span>
                         {' = '}
-                        <span className="text-neutral-600 dark:text-neutral-400">{envVar.value}</span>
+                        <span className="text-neutral-600 dark:text-neutral-400">
+                          {envVar.value}
+                        </span>
                       </div>
                     ))}
                   </div>

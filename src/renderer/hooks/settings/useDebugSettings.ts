@@ -19,6 +19,10 @@ type DiagnosticMetadata = {
   v8Version: string;
   nodeVersion: string;
   piSdkVersion: string;
+  piAgentDir: string;
+  piAuthPath: string;
+  piModelsPath: string;
+  piSettingsPath: string;
   platform: string;
   arch: string;
   osRelease: string;
@@ -211,4 +215,3 @@ export function useDebugSettings(): DebugSettingsState & DebugSettingsActions {
     loadDiagnosticMetadata
   };
 }
-

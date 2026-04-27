@@ -6,17 +6,16 @@ import { app, BrowserWindow, dialog, ipcMain } from 'electron';
 import { THINKING_LEVELS, THINKING_PRESETS, type ThinkingLevel } from '../../shared/constants';
 import { DEFAULT_GLM_BASE_URL, type ModelProvider } from '../../shared/core';
 import { getSkillStatus } from '../core/skills';
-import { resetSession } from '../lib/pi-session';
 import {
-  buildPiSessionEnv,
   buildEnhancedPath,
+  buildPiSessionEnv,
   DEFAULT_CODEX_MODELS,
   DEFAULT_GLM_MODELS,
   DEFAULT_SYSTEM_PROMPT_APPEND,
   ensureWorkspaceDir,
+  getAppSettings,
   // Model config
   getCodexModelsWithSource,
-  getAppSettings,
   getConfigStatus,
   // Layered config utilities
   getCurrentProjectDir,
@@ -34,8 +33,8 @@ import {
   getWorkspaceDir,
   hasWorkspaceDir,
   initProjectConfig,
-  setCodexModels,
   setAppSettings,
+  setCodexModels,
   setConfigValue,
   setGlmApiKey,
   setGlmBaseUrl,
@@ -45,6 +44,8 @@ import {
   type ConfigSource,
   type ModelConfig
 } from '../lib/config';
+import { ensureEmbeddedPiAgentPaths } from '../lib/pi-runtime';
+import { resetSession } from '../lib/pi-session';
 
 const requireModule = createRequire(import.meta.url);
 
@@ -273,6 +274,7 @@ export function registerConfigHandlers(): void {
 
   // Get app diagnostic metadata (versions, platform info, etc.)
   ipcMain.handle('config:get-diagnostic-metadata', () => {
+    const piPaths = ensureEmbeddedPiAgentPaths();
     return {
       appVersion: app.getVersion(),
       electronVersion: process.versions.electron,
@@ -280,6 +282,10 @@ export function registerConfigHandlers(): void {
       v8Version: process.versions.v8,
       nodeVersion: process.versions.node,
       piSdkVersion: getPiSdkVersion(),
+      piAgentDir: piPaths.agentDir,
+      piAuthPath: piPaths.authPath,
+      piModelsPath: piPaths.modelsPath,
+      piSettingsPath: piPaths.settingsPath,
       platform: process.platform,
       arch: process.arch,
       osRelease: release(),
