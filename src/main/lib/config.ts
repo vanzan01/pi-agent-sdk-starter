@@ -15,9 +15,9 @@ import {
   getConfigValue,
   getCurrentProjectDir,
   getFinnhubApiKeyWithSource as getFinnhubApiKeyWithSourceFromEnv,
-  getPerplexityApiKeyWithSource as getPerplexityApiKeyWithSourceFromEnv,
   getGlmApiKeyWithSource as getGlmApiKeyWithSourceFromEnv,
   getMergedConfig,
+  getPerplexityApiKeyWithSource as getPerplexityApiKeyWithSourceFromEnv,
   hasProjectConfig,
   initProjectConfig,
   loadProjectConfig,
@@ -27,7 +27,8 @@ import {
   setEnvValue,
   type ConfigSchema,
   type ConfigSource,
-  type ConfigValue
+  type ConfigValue,
+  type PiModelReference
 } from './layered-config';
 
 // Re-export layered config utilities for external use
@@ -471,10 +472,7 @@ function mergeModelsWithDefaults(
 /**
  * Filters out default values, keeping only overridden settings.
  */
-function filterNonDefaultModels(
-  models: ModelConfig,
-  defaults: Required<ModelConfig>
-): ModelConfig {
+function filterNonDefaultModels(models: ModelConfig, defaults: Required<ModelConfig>): ModelConfig {
   const result: ModelConfig = {};
   if (models.fast && models.fast !== defaults.fast) {
     result.fast = models.fast;
@@ -550,6 +548,28 @@ export async function setGlmModels(models: ModelConfig): Promise<void> {
   } else {
     await setConfigValue('glmModels', toStore);
   }
+}
+
+export function getPiModelPreferences(): Partial<Record<ChatModelPreference, PiModelReference>> {
+  const result = getConfigValue('piModelPreferences', {});
+  return result.value as Partial<Record<ChatModelPreference, PiModelReference>>;
+}
+
+export function getPiModelPreference(preference: ChatModelPreference): PiModelReference | null {
+  return getPiModelPreferences()[preference] ?? null;
+}
+
+export async function setPiModelPreference(
+  preference: ChatModelPreference,
+  model: PiModelReference | null
+): Promise<void> {
+  const current = getPiModelPreferences();
+  if (model) {
+    current[preference] = model;
+  } else {
+    delete current[preference];
+  }
+  await setConfigValue('piModelPreferences', Object.keys(current).length > 0 ? current : null);
 }
 
 // ============================================================================
@@ -907,10 +927,7 @@ export async function ensureWorkspaceDir(): Promise<void> {
       }
 
       const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_RENDERER_URL;
-      const resourcesDir =
-        isDev ?
-          join(app.getAppPath(), 'resources')
-        : process.resourcesPath;
+      const resourcesDir = isDev ? join(app.getAppPath(), 'resources') : process.resourcesPath;
 
       // Platform-aware binary names
       const binaries = [

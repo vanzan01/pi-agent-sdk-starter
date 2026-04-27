@@ -39,6 +39,9 @@ export interface ConfigSchema {
     deep?: string;
   };
 
+  // Generic Pi SDK provider/model references per speed tier.
+  piModelPreferences?: Partial<Record<ChatModelPreference, PiModelReference>>;
+
   // Developer settings
   debugMode?: boolean;
 
@@ -47,6 +50,11 @@ export interface ConfigSchema {
 
   // Per-app settings (keyed by app id)
   appSettings?: Record<string, unknown>;
+}
+
+export interface PiModelReference {
+  provider: string;
+  modelId: string;
 }
 
 /**

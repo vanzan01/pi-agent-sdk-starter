@@ -22,6 +22,7 @@ import {
   getDebugMode,
   getGlmApiKey,
   getGlmModels,
+  getPiModelPreference,
   getProvider,
   getSystemPromptAppend,
   getThinkingLevel,
@@ -206,12 +207,22 @@ function buildIdentityGuard(provider: string, modelId: string): string {
   ].join('\n');
 }
 
-async function createPiSession(systemPrompt: string, modelId: string): Promise<AgentSession> {
+async function createPiSession(
+  systemPrompt: string,
+  preference: ChatModelPreference
+): Promise<AgentSession> {
   const cwd = getWorkspaceDir();
   const piPaths = ensurePiRuntimePaths(cwd);
   const authStorage = createEmbeddedPiAuthStorage();
-  const provider = getProvider() === 'glm' ? GLM_PROVIDER : CODEX_PROVIDER;
-  const effectiveModelId = provider === GLM_PROVIDER ? modelId.toLowerCase() : modelId;
+  const selectedPiModel = getPiModelPreference(preference);
+  const legacyProvider = getProvider() === 'glm' ? GLM_PROVIDER : CODEX_PROVIDER;
+  const provider = selectedPiModel?.provider ?? legacyProvider;
+  const fallbackModelId =
+    legacyProvider === GLM_PROVIDER ?
+      getGlmModels()[preference]
+    : getModelIdForPreference(preference);
+  const rawModelId = selectedPiModel?.modelId ?? fallbackModelId;
+  const effectiveModelId = provider === GLM_PROVIDER ? rawModelId.toLowerCase() : rawModelId;
 
   if (provider === GLM_PROVIDER) {
     const glmApiKey = getGlmApiKey();
@@ -501,19 +512,16 @@ export async function runSingleAgentCall(
   let session: AgentSession | null = null;
   let unsubscribe: (() => void) | null = null;
   try {
-    const requestedModel = (() => {
-      if (getProvider() === 'glm') {
-        const glmModels = getGlmModels();
-        return config.model === 'deep' ? glmModels.deep : glmModels.smart;
-      }
-      return config.model === 'deep' ? DEEP_MODEL_ID : SMART_MODEL_ID;
-    })();
+    const requestedPreference: ChatModelPreference =
+      config.model === 'deep' ? 'deep'
+      : config.model === 'fast' ? 'fast'
+      : 'smart';
     const prompt =
       config.outputFormat ?
         `${userPrompt}\n\nReturn output that conforms to this JSON schema:\n${JSON.stringify(config.outputFormat.schema, null, 2)}`
       : userPrompt;
 
-    session = await createPiSession(config.systemPrompt, requestedModel);
+    session = await createPiSession(config.systemPrompt, requestedPreference);
     unsubscribe = session.subscribe((event: Record<string, unknown>) => {
       if (event.type === 'message_update') {
         const assistantEvent = event.assistantMessageEvent as
@@ -629,27 +637,12 @@ export async function startStreamingSession(
   await waitForWorkspaceReady();
 
   try {
-    const modelId = (() => {
-      if (getProvider() === 'glm') {
-        const glmModels = getGlmModels();
-        if (modelOverride === 'deep') return glmModels.deep;
-        if (modelOverride === 'smart') return glmModels.smart;
-        if (modelOverride === 'fast') return glmModels.fast;
-        const pref = ensureModelPreference();
-        return glmModels[pref];
-      }
-      return (
-        modelOverride === 'deep' ? DEEP_MODEL_ID
-        : modelOverride === 'smart' ? SMART_MODEL_ID
-        : modelOverride === 'fast' ? FAST_MODEL_ID
-        : getModelIdForPreference()
-      );
-    })();
+    const modelPreference = modelOverride ?? ensureModelPreference();
 
     activeSystemPromptAppend = desiredAppend;
     activeAllowedTools = allowedTools;
 
-    querySession = await createPiSession(desiredAppend, modelId);
+    querySession = await createPiSession(desiredAppend, modelPreference);
     unsubscribeSession = bindSessionEvents(querySession, mainWindow, sessionAppIdSnapshot);
 
     resolveSessionReady?.();

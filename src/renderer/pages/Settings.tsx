@@ -5,15 +5,14 @@ import { useMemo, useState } from 'react';
 import type { AppManifest } from '../../shared/apps';
 import { getAppSettingsPanel } from '../apps/settingsRegistry';
 import { DomainConfigPanel } from '../components/DomainConfigPanel';
-import { DebugSettingsPanel } from '../components/settings/DebugSettingsPanel';
 import { ConfigStatusBanner } from '../components/settings/ConfigStatusBanner';
-import { ProviderSettingsPanel } from '../components/settings/ProviderSettingsPanel';
-import { ModelsSettingsPanel } from '../components/settings/ModelsSettingsPanel';
+import { DebugSettingsPanel } from '../components/settings/DebugSettingsPanel';
+import { PiModelsSettingsPanel } from '../components/settings/PiModelsSettingsPanel';
 import { PromptsSettingsPanel } from '../components/settings/PromptsSettingsPanel';
 import { UiPreferencesPanel } from '../components/settings/UiPreferencesPanel';
 import { WorkspaceSettingsPanel } from '../components/settings/WorkspaceSettingsPanel';
 import { useDebugSettings } from '../hooks/settings/useDebugSettings';
-import { useProviderSettings } from '../hooks/settings/useProviderSettings';
+import { usePiModelsSettings } from '../hooks/settings/usePiModelsSettings';
 import { usePromptSettings } from '../hooks/settings/usePromptSettings';
 import { useSettingsShortcuts } from '../hooks/settings/useSettingsShortcuts';
 import { useWorkspaceSettings } from '../hooks/settings/useWorkspaceSettings';
@@ -25,7 +24,6 @@ interface SettingsProps {
   initialTab?: string | null;
   onSelectApp?: (appId: string) => void;
 }
-
 
 function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: SettingsProps) {
   const visibleApps = useMemo(() => apps.filter((app) => !app.hidden), [apps]);
@@ -64,36 +62,7 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
     loadEnvVars,
     loadDiagnosticMetadata
   } = useDebugSettings();
-  const {
-    provider,
-    providerSource,
-    isLoadingProvider,
-    isSavingProvider,
-    glmApiKey,
-    glmApiKeyInput,
-    glmBaseUrl,
-    glmBaseUrlInput,
-    isSavingGlmConfig,
-    glmSaveState,
-    codexModels,
-    codexModelsInput,
-    glmModels,
-    glmModelsInput,
-    isSavingModels,
-    modelsSaveState,
-    setGlmApiKeyInput,
-    setGlmBaseUrlInput,
-    setCodexModelsInput,
-    setGlmModelsInput,
-    handleProviderChange,
-    handleSaveGlmApiKey,
-    handleClearGlmApiKey,
-    handleSaveGlmBaseUrl,
-    handleSaveCodexModels,
-    handleResetCodexModels,
-    handleSaveGlmModels,
-    handleResetGlmModels
-  } = useProviderSettings();
+  const piModels = usePiModelsSettings();
 
   const {
     systemPromptAppend,
@@ -111,10 +80,7 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
     () => visibleApps.find((app) => app.id === selectedTab),
     [visibleApps, selectedTab]
   );
-  const AppSettingsPanel = useMemo(
-    () => getAppSettingsPanel(selectedApp),
-    [selectedApp]
-  );
+  const AppSettingsPanel = useMemo(() => getAppSettingsPanel(selectedApp), [selectedApp]);
 
   // Check if any app has the 'chat' feature - used to show/hide chat-related global settings
   const hasAnyChatApp = useMemo(
@@ -125,7 +91,7 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
   useSettingsShortcuts({ onBack });
 
   const isFormLoading =
-    isLoadingWorkspace || isLoadingDebugMode || isLoadingPrompt || isLoadingProvider;
+    isLoadingWorkspace || isLoadingDebugMode || isLoadingPrompt || piModels.isLoading;
 
   return (
     <div className="flex h-screen flex-col bg-linear-to-b from-neutral-50 via-white to-neutral-100 dark:from-neutral-950 dark:via-neutral-900 dark:to-neutral-950">
@@ -140,7 +106,7 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
                   Settings
                 </h1>
                 <p className="mt-1 text-sm text-neutral-500 dark:text-neutral-400">
-                  Configure API access and workspace directory.
+                  Configure Pi SDK providers, model routing, and workspace settings.
                 </p>
               </div>
               <button
@@ -206,42 +172,33 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
 
                   {hasAnyChatApp && (
                     <>
-                      <ProviderSettingsPanel
-                        hasAnyChatApp={hasAnyChatApp}
-                        provider={provider}
-                        providerSource={providerSource}
-                        isSavingProvider={isSavingProvider}
-                        glmApiKey={glmApiKey}
-                        glmApiKeyInput={glmApiKeyInput}
-                        glmBaseUrl={glmBaseUrl}
-                        glmBaseUrlInput={glmBaseUrlInput}
-                        isSavingGlmConfig={isSavingGlmConfig}
-                        glmSaveState={glmSaveState}
-                        onProviderChange={handleProviderChange}
-                        onGlmApiKeyInputChange={setGlmApiKeyInput}
-                        onGlmBaseUrlInputChange={setGlmBaseUrlInput}
-                        onSaveGlmApiKey={handleSaveGlmApiKey}
-                        onClearGlmApiKey={handleClearGlmApiKey}
-                        onSaveGlmBaseUrl={handleSaveGlmBaseUrl}
-                      />
-
-                      <div className="border-t border-neutral-200/80 dark:border-neutral-800" />
-
-                      <ModelsSettingsPanel
-                        provider={provider}
-                        providerSource={providerSource}
-                        codexModels={codexModels}
-                        codexModelsInput={codexModelsInput}
-                        glmModels={glmModels}
-                        glmModelsInput={glmModelsInput}
-                        isSavingModels={isSavingModels}
-                        modelsSaveState={modelsSaveState}
-                        onCodexModelsInputChange={setCodexModelsInput}
-                        onGlmModelsInputChange={setGlmModelsInput}
-                        onSaveCodexModels={handleSaveCodexModels}
-                        onResetCodexModels={handleResetCodexModels}
-                        onSaveGlmModels={handleSaveGlmModels}
-                        onResetGlmModels={handleResetGlmModels}
+                      <PiModelsSettingsPanel
+                        providers={piModels.providers}
+                        activeProvider={piModels.activeProvider}
+                        activeProviderId={piModels.activeProviderId}
+                        selected={piModels.state?.selected ?? {}}
+                        paths={piModels.state?.paths}
+                        registryError={piModels.state?.registryError}
+                        apiKeyDrafts={piModels.apiKeyDrafts}
+                        busyAction={piModels.busyAction}
+                        isLoading={piModels.isLoading}
+                        message={piModels.message}
+                        oauthPrompt={piModels.oauthPrompt}
+                        oauthPromptValue={piModels.oauthPromptValue}
+                        onSelectProvider={piModels.setActiveProviderId}
+                        onApiKeyDraftChange={(providerId, value) =>
+                          piModels.setApiKeyDrafts((current) => ({
+                            ...current,
+                            [providerId]: value
+                          }))
+                        }
+                        onOAuthPromptValueChange={piModels.setOauthPromptValue}
+                        onSubmitOAuthPrompt={piModels.submitOAuthPrompt}
+                        onCancelOAuthPrompt={piModels.cancelOAuthPrompt}
+                        onSaveApiKey={piModels.saveApiKey}
+                        onClearAuth={piModels.clearAuth}
+                        onLoginOAuth={piModels.loginOAuth}
+                        onSelectModel={piModels.selectModel}
                       />
 
                       <div className="border-t border-neutral-200/80 dark:border-neutral-800" />
@@ -301,8 +258,7 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
                 </div>
               : selectedTab === 'domains' ?
                 <DomainConfigPanel />
-              : (
-                <div className="space-y-6">
+              : <div className="space-y-6">
                   <div>
                     <p className="text-xs tracking-wide text-neutral-500 uppercase dark:text-neutral-400">
                       App settings
@@ -325,7 +281,6 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
                     }
                   </div>
                 </div>
-              )
               }
             </div>
           </div>

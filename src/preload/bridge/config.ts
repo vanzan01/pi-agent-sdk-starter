@@ -1,7 +1,11 @@
 import type { IpcRenderer } from 'electron';
 
-import type { ModelConfig, AppSettingsPayload } from '../../shared/types/electron-api';
 import type { ModelProvider } from '../../shared/core';
+import type {
+  AppSettingsPayload,
+  ModelConfig,
+  PiOAuthPromptRendererRequest
+} from '../../shared/types/electron-api';
 
 export function createConfigBridge(ipcRenderer: IpcRenderer) {
   return {
@@ -13,7 +17,8 @@ export function createConfigBridge(ipcRenderer: IpcRenderer) {
     selectWorkspaceDir: () => ipcRenderer.invoke('config:browse-directory'),
     getConfigStatus: () => ipcRenderer.invoke('config:get-config-status'),
     getMergedConfig: () => ipcRenderer.invoke('config:get-merged-config'),
-    initProjectConfig: (workspaceDir?: string) => ipcRenderer.invoke('config:init-project-config', workspaceDir),
+    initProjectConfig: (workspaceDir?: string) =>
+      ipcRenderer.invoke('config:init-project-config', workspaceDir),
     getDebugMode: () => ipcRenderer.invoke('config:get-debug-mode'),
     setDebugMode: (enabled: boolean) => ipcRenderer.invoke('config:set-debug-mode', enabled),
     getFloatingNav: () => ipcRenderer.invoke('config:get-floating-nav'),
@@ -26,13 +31,16 @@ export function createConfigBridge(ipcRenderer: IpcRenderer) {
     setThinkingLevel: (level: string) => ipcRenderer.invoke('config:set-thinking-level', level),
     getThinkingPresets: () => ipcRenderer.invoke('config:get-thinking-presets'),
     getSystemPromptAppend: () => ipcRenderer.invoke('config:get-system-prompt-append'),
-    setSystemPromptAppend: (text: string | null) => ipcRenderer.invoke('config:set-system-prompt-append', text),
-    getDefaultSystemPromptAppend: () => ipcRenderer.invoke('config:get-default-system-prompt-append'),
+    setSystemPromptAppend: (text: string | null) =>
+      ipcRenderer.invoke('config:set-system-prompt-append', text),
+    getDefaultSystemPromptAppend: () =>
+      ipcRenderer.invoke('config:get-default-system-prompt-append'),
     getProvider: () => ipcRenderer.invoke('config:get-provider'),
     setProvider: (provider: ModelProvider) => ipcRenderer.invoke('config:set-provider', provider),
     getGlmConfig: () => ipcRenderer.invoke('config:get-glm-config'),
     setGlmApiKey: (apiKey: string | null) => ipcRenderer.invoke('config:set-glm-api-key', apiKey),
-    setGlmBaseUrl: (baseUrl: string | null) => ipcRenderer.invoke('config:set-glm-base-url', baseUrl),
+    setGlmBaseUrl: (baseUrl: string | null) =>
+      ipcRenderer.invoke('config:set-glm-base-url', baseUrl),
     getDefaultGlmBaseUrl: () => ipcRenderer.invoke('config:get-default-glm-base-url'),
     getCodexModels: () => ipcRenderer.invoke('config:get-codex-models'),
     setCodexModels: (models: ModelConfig) => ipcRenderer.invoke('config:set-codex-models', models),
@@ -40,16 +48,43 @@ export function createConfigBridge(ipcRenderer: IpcRenderer) {
     getGlmModels: () => ipcRenderer.invoke('config:get-glm-models'),
     setGlmModels: (models: ModelConfig) => ipcRenderer.invoke('config:set-glm-models', models),
     getDefaultGlmModels: () => ipcRenderer.invoke('config:get-default-glm-models'),
+    getPiModelsState: () => ipcRenderer.invoke('config:get-pi-models-state'),
+    setPiProviderApiKey: (provider: string, apiKey: string | null) =>
+      ipcRenderer.invoke('config:set-pi-provider-api-key', provider, apiKey),
+    clearPiProviderAuth: (provider: string) =>
+      ipcRenderer.invoke('config:clear-pi-provider-auth', provider),
+    loginPiOAuthProvider: (provider: string) =>
+      ipcRenderer.invoke('config:login-pi-oauth-provider', provider),
+    selectPiModelPreference: (
+      preference: 'fast' | 'smart' | 'deep',
+      provider: string,
+      modelId: string
+    ) => ipcRenderer.invoke('config:select-pi-model-preference', preference, provider, modelId),
+    onPiOAuthPrompt: (callback: (request: PiOAuthPromptRendererRequest) => void) => {
+      const listener = (_event: Electron.IpcRendererEvent, request: PiOAuthPromptRendererRequest) =>
+        callback(request);
+      ipcRenderer.on('config:pi-oauth-prompt', listener);
+      return () => ipcRenderer.removeListener('config:pi-oauth-prompt', listener);
+    },
+    respondPiOAuthPrompt: (requestId: string, response: { value?: string; cancelled?: boolean }) =>
+      ipcRenderer.send('config:pi-oauth-prompt-response', { requestId, ...response }),
     getAppSettings: (appId: string) => ipcRenderer.invoke('config:get-app-settings', appId),
-    setAppSettings: (appId: string, settings: AppSettingsPayload) => ipcRenderer.invoke('config:set-app-settings', appId, settings),
+    setAppSettings: (appId: string, settings: AppSettingsPayload) =>
+      ipcRenderer.invoke('config:set-app-settings', appId, settings),
     getSkillStatus: (appId: string) => ipcRenderer.invoke('skills:get-status', appId),
-    onWorkspaceChanged: (callback: (data: { workspaceDir: string; provider: ModelProvider }) => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, data: { workspaceDir: string; provider: ModelProvider }) => callback(data);
+    onWorkspaceChanged: (
+      callback: (data: { workspaceDir: string; provider: ModelProvider }) => void
+    ) => {
+      const listener = (
+        _event: Electron.IpcRendererEvent,
+        data: { workspaceDir: string; provider: ModelProvider }
+      ) => callback(data);
       ipcRenderer.on('config:workspace-changed', listener);
       return () => ipcRenderer.removeListener('config:workspace-changed', listener);
     },
     onFloatingNavChanged: (callback: (data: { enabled: boolean }) => void) => {
-      const listener = (_event: Electron.IpcRendererEvent, data: { enabled: boolean }) => callback(data);
+      const listener = (_event: Electron.IpcRendererEvent, data: { enabled: boolean }) =>
+        callback(data);
       ipcRenderer.on('config:floating-nav-changed', listener);
       return () => ipcRenderer.removeListener('config:floating-nav-changed', listener);
     }

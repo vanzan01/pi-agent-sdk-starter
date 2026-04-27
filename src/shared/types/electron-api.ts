@@ -329,6 +329,62 @@ export interface SkillStatusResponse {
   missing: string[];
 }
 
+export interface PiModelReference {
+  provider: string;
+  modelId: string;
+}
+
+export interface PiModelSummary {
+  provider: string;
+  id: string;
+  name: string;
+  reasoning: boolean;
+  input: string[];
+  contextWindow: number;
+  maxTokens: number;
+  available: boolean;
+}
+
+export interface PiProviderSummary {
+  id: string;
+  name: string;
+  authConfigured: boolean;
+  authSource?: string;
+  authLabel?: string;
+  supportsOAuth: boolean;
+  usesCallbackServer?: boolean;
+  modelCount: number;
+  availableModelCount: number;
+  models: PiModelSummary[];
+}
+
+export interface PiModelsState {
+  paths: {
+    sdkDir: string;
+    authPath: string;
+    projectConfigDir: string;
+    modelsPath: string;
+    settingsPath: string;
+  };
+  providers: PiProviderSummary[];
+  selected: Partial<Record<ChatModelPreference, PiModelReference>>;
+  registryError: string | null;
+}
+
+export interface PiModelsMutationResponse {
+  success: boolean;
+  state?: PiModelsState;
+  error?: string;
+}
+
+export interface PiOAuthPromptRendererRequest {
+  requestId: string;
+  provider: string;
+  type: 'prompt' | 'manual-code';
+  message: string;
+  allowEmpty?: boolean;
+}
+
 export interface ModelConfig {
   fast?: string;
   smart?: string;
@@ -503,6 +559,23 @@ export interface ConfigBridge {
   getGlmModels: () => Promise<ModelConfigResponse>;
   setGlmModels: (models: ModelConfig) => Promise<SetModelConfigResponse>;
   getDefaultGlmModels: () => Promise<{ models: { fast: string; smart: string; deep: string } }>;
+  getPiModelsState: () => Promise<PiModelsState>;
+  setPiProviderApiKey: (
+    provider: string,
+    apiKey: string | null
+  ) => Promise<PiModelsMutationResponse>;
+  clearPiProviderAuth: (provider: string) => Promise<PiModelsMutationResponse>;
+  loginPiOAuthProvider: (provider: string) => Promise<PiModelsMutationResponse>;
+  selectPiModelPreference: (
+    preference: ChatModelPreference,
+    provider: string,
+    modelId: string
+  ) => Promise<PiModelsMutationResponse>;
+  onPiOAuthPrompt: (callback: (request: PiOAuthPromptRendererRequest) => void) => () => void;
+  respondPiOAuthPrompt: (
+    requestId: string,
+    response: { value?: string; cancelled?: boolean }
+  ) => void;
   getAppSettings: (appId: string) => Promise<AppSettingsResponse>;
   setAppSettings: (appId: string, settings: AppSettingsPayload) => Promise<AppSettingsResponse>;
   getSkillStatus: (appId: string) => Promise<SkillStatusResponse>;

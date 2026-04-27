@@ -1,10 +1,14 @@
 import { existsSync, readFileSync } from 'fs';
 import { createRequire } from 'module';
 import { release, type, version } from 'os';
-import { app, BrowserWindow, dialog, ipcMain } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, type WebContents } from 'electron';
 
 import { THINKING_LEVELS, THINKING_PRESETS, type ThinkingLevel } from '../../shared/constants';
-import { DEFAULT_GLM_BASE_URL, type ModelProvider } from '../../shared/core';
+import {
+  DEFAULT_GLM_BASE_URL,
+  type ChatModelPreference,
+  type ModelProvider
+} from '../../shared/core';
 import { getSkillStatus } from '../core/skills';
 import {
   buildEnhancedPath,
@@ -44,10 +48,52 @@ import {
   type ConfigSource,
   type ModelConfig
 } from '../lib/config';
+import {
+  clearPiProviderAuth,
+  getPiModelsState,
+  loginPiOAuthProvider,
+  selectPiModelPreference,
+  setPiProviderApiKey,
+  type PiOAuthPromptRequest
+} from '../lib/pi-models';
 import { ensurePiRuntimePaths } from '../lib/pi-runtime';
 import { resetSession } from '../lib/pi-session';
 
 const requireModule = createRequire(import.meta.url);
+const OAUTH_PROMPT_TIMEOUT_MS = 10 * 60 * 1000;
+
+function requestRendererOAuthInput(
+  webContents: WebContents,
+  request: PiOAuthPromptRequest
+): Promise<string> {
+  const requestId = `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+  return new Promise((resolve, reject) => {
+    const cleanup = () => {
+      clearTimeout(timeout);
+      ipcMain.removeListener('config:pi-oauth-prompt-response', listener);
+    };
+    const timeout = setTimeout(() => {
+      cleanup();
+      reject(new Error('OAuth input timed out.'));
+    }, OAUTH_PROMPT_TIMEOUT_MS);
+    const listener = (
+      event: Electron.IpcMainEvent,
+      response: { requestId: string; value?: string; cancelled?: boolean }
+    ) => {
+      if (event.sender !== webContents || response.requestId !== requestId) return;
+      cleanup();
+      if (response.cancelled) {
+        reject(new Error('OAuth login was cancelled.'));
+      } else {
+        resolve(response.value ?? '');
+      }
+    };
+
+    ipcMain.on('config:pi-oauth-prompt-response', listener);
+    webContents.send('config:pi-oauth-prompt', { requestId, ...request });
+  });
+}
 
 function getPiSdkVersion(): string {
   try {
@@ -434,6 +480,66 @@ export function registerConfigHandlers(): void {
   // ============================================================================
   // Provider Configuration
   // ============================================================================
+
+  ipcMain.handle('config:get-pi-models-state', () => getPiModelsState());
+
+  ipcMain.handle(
+    'config:set-pi-provider-api-key',
+    async (_event, provider: string, apiKey: string | null) => {
+      try {
+        return { success: true, state: await setPiProviderApiKey(provider, apiKey) };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to save provider API key'
+        };
+      }
+    }
+  );
+
+  ipcMain.handle('config:clear-pi-provider-auth', async (_event, provider: string) => {
+    try {
+      return { success: true, state: await clearPiProviderAuth(provider) };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to clear provider credentials'
+      };
+    }
+  });
+
+  ipcMain.handle('config:login-pi-oauth-provider', async (event, provider: string) => {
+    try {
+      return {
+        success: true,
+        state: await loginPiOAuthProvider(provider, {
+          requestInput: (request) => requestRendererOAuthInput(event.sender, request)
+        })
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to complete OAuth login'
+      };
+    }
+  });
+
+  ipcMain.handle(
+    'config:select-pi-model-preference',
+    async (_event, preference: ChatModelPreference, provider: string, modelId: string) => {
+      try {
+        return {
+          success: true,
+          state: await selectPiModelPreference(preference, provider, modelId)
+        };
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : 'Failed to select model'
+        };
+      }
+    }
+  );
 
   // Get current provider with source info
   ipcMain.handle('config:get-provider', () => {
