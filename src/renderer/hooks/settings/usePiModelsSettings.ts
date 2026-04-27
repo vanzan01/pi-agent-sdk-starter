@@ -10,6 +10,9 @@ export function usePiModelsSettings() {
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [oauthPrompt, setOauthPrompt] = useState<PiOAuthPromptRendererRequest | null>(null);
+  const [manualOAuthPrompt, setManualOAuthPrompt] = useState<PiOAuthPromptRendererRequest | null>(
+    null
+  );
   const [oauthPromptValue, setOauthPromptValue] = useState('');
 
   const providers = useMemo(() => state?.providers ?? [], [state?.providers]);
@@ -35,8 +38,12 @@ export function usePiModelsSettings() {
 
   useEffect(() => {
     return window.electron.config.onPiOAuthPrompt((request) => {
-      setOauthPrompt(request);
-      setOauthPromptValue('');
+      if (request.type === 'manual-code') {
+        setManualOAuthPrompt(request);
+      } else {
+        setOauthPrompt(request);
+        setOauthPromptValue('');
+      }
     });
   }, []);
 
@@ -44,6 +51,9 @@ export function usePiModelsSettings() {
     if (result.success && result.state) {
       setState(result.state);
       setMessage({ type: 'success', text: 'Pi SDK provider settings updated.' });
+      setManualOAuthPrompt(null);
+      setOauthPrompt(null);
+      setOauthPromptValue('');
     } else {
       setMessage({
         type: 'error',
@@ -85,6 +95,7 @@ export function usePiModelsSettings() {
       applyMutation(await window.electron.config.loginPiOAuthProvider(provider));
     } finally {
       setBusyAction(null);
+      setManualOAuthPrompt(null);
     }
   };
 
@@ -114,10 +125,21 @@ export function usePiModelsSettings() {
 
   const cancelOAuthPrompt = () => {
     if (!oauthPrompt) return;
+    if (oauthPrompt.type === 'manual-code') {
+      setOauthPrompt(null);
+      setOauthPromptValue('');
+      return;
+    }
     window.electron.config.respondPiOAuthPrompt(oauthPrompt.requestId, {
       cancelled: true
     });
     setOauthPrompt(null);
+    setOauthPromptValue('');
+  };
+
+  const openManualOAuthPrompt = () => {
+    if (!manualOAuthPrompt) return;
+    setOauthPrompt(manualOAuthPrompt);
     setOauthPromptValue('');
   };
 
@@ -131,6 +153,7 @@ export function usePiModelsSettings() {
     isLoading,
     message,
     oauthPrompt,
+    manualOAuthPrompt,
     oauthPromptValue,
     setActiveProviderId,
     setApiKeyDrafts,
@@ -139,6 +162,7 @@ export function usePiModelsSettings() {
     clearAuth,
     loginOAuth,
     selectModel,
+    openManualOAuthPrompt,
     submitOAuthPrompt,
     cancelOAuthPrompt,
     reload: load

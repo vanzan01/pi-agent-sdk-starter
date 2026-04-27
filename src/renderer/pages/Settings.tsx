@@ -184,6 +184,7 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
                         isLoading={piModels.isLoading}
                         message={piModels.message}
                         oauthPrompt={piModels.oauthPrompt}
+                        manualOAuthPrompt={piModels.manualOAuthPrompt}
                         oauthPromptValue={piModels.oauthPromptValue}
                         onSelectProvider={piModels.setActiveProviderId}
                         onApiKeyDraftChange={(providerId, value) =>
@@ -193,6 +194,7 @@ function Settings({ onBack, apps, activeAppId, initialTab, onSelectApp }: Settin
                           }))
                         }
                         onOAuthPromptValueChange={piModels.setOauthPromptValue}
+                        onOpenManualOAuthPrompt={piModels.openManualOAuthPrompt}
                         onSubmitOAuthPrompt={piModels.submitOAuthPrompt}
                         onCancelOAuthPrompt={piModels.cancelOAuthPrompt}
                         onSaveApiKey={piModels.saveApiKey}

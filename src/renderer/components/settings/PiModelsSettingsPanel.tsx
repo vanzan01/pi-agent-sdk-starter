@@ -19,10 +19,12 @@ interface PiModelsSettingsPanelProps {
   isLoading: boolean;
   message: { type: 'success' | 'error'; text: string } | null;
   oauthPrompt: PiOAuthPromptRendererRequest | null;
+  manualOAuthPrompt: PiOAuthPromptRendererRequest | null;
   oauthPromptValue: string;
   onSelectProvider: (providerId: string) => void;
   onApiKeyDraftChange: (provider: string, value: string) => void;
   onOAuthPromptValueChange: (value: string) => void;
+  onOpenManualOAuthPrompt: () => void;
   onSubmitOAuthPrompt: () => void;
   onCancelOAuthPrompt: () => void;
   onSaveApiKey: (provider: string) => Promise<void>;
@@ -43,10 +45,12 @@ export function PiModelsSettingsPanel({
   isLoading,
   message,
   oauthPrompt,
+  manualOAuthPrompt,
   oauthPromptValue,
   onSelectProvider,
   onApiKeyDraftChange,
   onOAuthPromptValueChange,
+  onOpenManualOAuthPrompt,
   onSubmitOAuthPrompt,
   onCancelOAuthPrompt,
   onSaveApiKey,
@@ -133,7 +137,9 @@ export function PiModelsSettingsPanel({
               provider={activeProvider}
               apiKeyDraft={apiKeyDrafts[activeProvider.id] ?? ''}
               busyAction={busyAction}
+              manualOAuthPrompt={manualOAuthPrompt}
               onApiKeyDraftChange={onApiKeyDraftChange}
+              onOpenManualOAuthPrompt={onOpenManualOAuthPrompt}
               onSaveApiKey={onSaveApiKey}
               onClearAuth={onClearAuth}
               onLoginOAuth={onLoginOAuth}
@@ -218,7 +224,9 @@ function ProviderAuthCard({
   provider,
   apiKeyDraft,
   busyAction,
+  manualOAuthPrompt,
   onApiKeyDraftChange,
+  onOpenManualOAuthPrompt,
   onSaveApiKey,
   onClearAuth,
   onLoginOAuth
@@ -226,7 +234,9 @@ function ProviderAuthCard({
   provider: PiProviderSummary;
   apiKeyDraft: string;
   busyAction: string | null;
+  manualOAuthPrompt: PiOAuthPromptRendererRequest | null;
   onApiKeyDraftChange: (provider: string, value: string) => void;
+  onOpenManualOAuthPrompt: () => void;
   onSaveApiKey: (provider: string) => Promise<void>;
   onClearAuth: (provider: string) => Promise<void>;
   onLoginOAuth: (provider: string) => Promise<void>;
@@ -262,6 +272,15 @@ function ProviderAuthCard({
             className="rounded-full bg-neutral-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 dark:bg-neutral-100 dark:text-neutral-900"
           >
             {busyAction === `oauth:${provider.id}` ? 'Waiting for OAuth...' : 'Login with OAuth'}
+          </button>
+        )}
+        {busyAction === `oauth:${provider.id}` && manualOAuthPrompt?.provider === provider.id && (
+          <button
+            type="button"
+            onClick={onOpenManualOAuthPrompt}
+            className="rounded-full border border-neutral-200 px-4 py-2 text-sm font-semibold text-neutral-700 hover:border-neutral-300 dark:border-neutral-700 dark:text-neutral-200"
+          >
+            Paste callback manually
           </button>
         )}
         {provider.authConfigured && (
