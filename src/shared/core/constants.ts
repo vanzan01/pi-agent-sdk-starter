@@ -1,7 +1,7 @@
 export const MAX_ATTACHMENT_BYTES = 32 * 1024 * 1024; // 32 MB
 export const ATTACHMENTS_DIR_NAME = 'attachments';
 
-// Codex reasoning-effort presets. These map directly to Pi SDK thinking levels.
+// Reasoning-effort presets map directly to Pi SDK thinking levels.
 export const THINKING_LEVELS = ['low', 'medium', 'high', 'xhigh'] as const;
 export type ThinkingLevel = (typeof THINKING_LEVELS)[number];
 

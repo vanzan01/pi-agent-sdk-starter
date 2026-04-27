@@ -14,5 +14,5 @@ license: MIT
 
 # Build & Transparency
 
-- This tool is compiled locally from `.Codex/skills/_template/scripts/summarize-file.ts` using Bun `--compile` into `out/.Codex/skills/_template/scripts/`.
+- This tool is compiled locally from `.agents/skills/_template/scripts/summarize-file.ts` using Bun `--compile` into `out/.agents/skills/_template/scripts/`.
 - You can rebuild or run the TS directly with Bun to audit behavior.

@@ -22,7 +22,7 @@ Rebuild native Electron modules:
 bun run postinstall
 ```
 
-## Pi/Codex Auth Fails
+## Pi SDK Auth Fails
 
 Confirm Pi can authenticate outside the app:
 
@@ -31,7 +31,7 @@ pi
 /login
 ```
 
-Choose the Codex/OpenAI login path. Then run:
+Choose the provider you want to use in Settings -> Models & Providers. Then run:
 
 ```bash
 bun run test:bypass-auth

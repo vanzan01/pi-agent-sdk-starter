@@ -9,7 +9,7 @@ import {
 
 import { getPiSdkTestAgentPaths } from './pi-sdk-test-paths';
 
-export async function runPiCodexPrompt(
+export async function runPiSdkPrompt(
   prompt: string,
   systemPrompt = 'Be concise and follow instructions exactly.',
   modelId = 'gpt-5.4'

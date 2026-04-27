@@ -32,4 +32,4 @@ for (const expected of required) {
 }
 
 if (failed) process.exit(1);
-console.log('PASS: Pi SDK Codex models are available with expected context windows.');
+console.log('PASS: Pi SDK models are available with expected context windows.');

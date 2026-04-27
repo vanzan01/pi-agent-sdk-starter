@@ -47,7 +47,7 @@ import {
 const FAST_MODEL_ID = 'gpt-5.4';
 const SMART_MODEL_ID = 'gpt-5.4';
 const DEEP_MODEL_ID = 'gpt-5.5';
-const CODEX_PROVIDER = 'openai-codex';
+const DEFAULT_PROVIDER = 'openai-codex';
 
 const MODEL_BY_PREFERENCE: Record<ChatModelPreference, string> = {
   fast: FAST_MODEL_ID,
@@ -208,7 +208,7 @@ async function createPiSession(
   const piPaths = ensurePiRuntimePaths(cwd);
   const authStorage = createEmbeddedPiAuthStorage();
   const selectedPiModel = getPiModelPreference(preference);
-  const provider = selectedPiModel?.provider ?? CODEX_PROVIDER;
+  const provider = selectedPiModel?.provider ?? DEFAULT_PROVIDER;
   const fallbackModelId = getModelIdForPreference(preference);
   const rawModelId = selectedPiModel?.modelId ?? fallbackModelId;
   const effectiveModelId = rawModelId;

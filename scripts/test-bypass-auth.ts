@@ -26,7 +26,7 @@ if (
   )
 ) {
   console.error(
-    `FAIL: openai-codex/gpt-5.4 is not available in ${paths.authPath}. Configure Codex OAuth in the starter-owned Pi auth store.`
+    `FAIL: openai-codex/gpt-5.4 is not available in ${paths.authPath}. Configure provider OAuth in the starter-owned Pi auth store.`
   );
   process.exit(1);
 }
@@ -56,13 +56,13 @@ const unsubscribe = session.subscribe((event) => {
   }
 });
 
-await session.prompt('Say exactly: "Pi Codex OAuth works!"');
+await session.prompt('Say exactly: "Pi SDK OAuth works!"');
 unsubscribe();
 session.dispose();
 
-if (!response.includes('Pi Codex OAuth works!')) {
+if (!response.includes('Pi SDK OAuth works!')) {
   console.error(`FAIL: Unexpected response: ${response.trim()}`);
   process.exit(1);
 }
 
-console.log('PASS: Pi SDK authenticated with OpenAI Codex OAuth and received expected response.');
+console.log('PASS: Pi SDK authenticated with provider OAuth and received expected response.');

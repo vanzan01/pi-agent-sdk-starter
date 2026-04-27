@@ -3,7 +3,7 @@
 [![Built with Pi SDK](https://img.shields.io/badge/Pi%20SDK-Starter%20Kit-00bcd4)](https://www.npmjs.com/package/@mariozechner/pi-coding-agent)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
-> A batteries-included starter for building agentic desktop apps with Pi SDK, Codex, and OpenAI-compatible providers.
+> A batteries-included starter for building agentic desktop apps with Pi SDK and configurable providers.
 
 ![Pi Starter SDK Overview](static/hero.jpg)
 
@@ -100,7 +100,7 @@ Provider auth and model routing are configured through Settings using the Pi SDK
 
 | Provider                   | Auth                                                                    |
 | -------------------------- | ----------------------------------------------------------------------- |
-| Codex                      | Pi SDK OAuth credentials in `~/.pi-sdk/auth.json`                       |
+| OAuth providers            | Pi SDK OAuth credentials in `~/.pi-sdk/auth.json`                       |
 | Other compatible providers | Project `.pi-sdk/models.json` plus credentials in `~/.pi-sdk/auth.json` |
 
 Settings lets you choose provider/model pairs for the fast, smart, and deep tiers.
@@ -124,7 +124,7 @@ bun run build                  # Build for production
 bun run typecheck              # Type check
 bun run lint                   # Lint code
 bun run test:ai-news-tweet     # Run pipeline smoke test
-bun run test:bypass-auth       # Verify Pi/Codex auth
+bun run test:bypass-auth       # Verify Pi SDK auth
 bun run test:context-window    # Verify expected context windows
 bun run test:export            # Verify standalone export flow
 ```

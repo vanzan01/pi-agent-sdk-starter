@@ -1,20 +1,20 @@
-import { runPiCodexPrompt } from './pi-sdk-test-utils';
+import { runPiSdkPrompt } from './pi-sdk-test-utils';
 
 const topic = `OpenAI announced a new coding model with stronger repository understanding and faster patch generation for developers.`;
 
-const research = await runPiCodexPrompt(
+const research = await runPiSdkPrompt(
   `Extract one concise AI-news item from this source text as JSON with keys headline and summary:\n${topic}`,
   'You are the Researcher stage. Return compact JSON only.'
 );
 console.log('Research:', research);
 
-const analysis = await runPiCodexPrompt(
+const analysis = await runPiSdkPrompt(
   `Analyze why this AI news matters in one sentence:\n${research}`,
   'You are the Analyst stage. Return one sentence only.'
 );
 console.log('Analysis:', analysis);
 
-const tweet = await runPiCodexPrompt(
+const tweet = await runPiSdkPrompt(
   `Write one tweet under 280 characters from this analysis. Include #AI.\n${analysis}`,
   'You are the Writer stage. Return only the tweet text.'
 );
@@ -25,4 +25,4 @@ if (!tweet.includes('#AI') || tweet.length > 280) {
   process.exit(1);
 }
 
-console.log('PASS: Pi SDK Codex 3-stage ai-news-tweet pipeline completed.');
+console.log('PASS: Pi SDK 3-stage ai-news-tweet pipeline completed.');

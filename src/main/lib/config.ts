@@ -574,7 +574,7 @@ export function buildEnhancedPath(): string {
 
 /**
  * Builds the complete environment object used by local tools and debug panels.
- * Codex OAuth is handled by Pi SDK AuthStorage, not environment variables.
+ * Provider credentials are handled by Pi SDK AuthStorage, not environment variables.
  */
 export function buildPiSessionEnv(): Record<string, string> {
   const enhancedPath = buildEnhancedPath();
