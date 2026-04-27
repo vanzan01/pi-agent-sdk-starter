@@ -56,7 +56,7 @@ export function getPiModelsState() {
     authStorage.getOAuthProviders().map((provider) => [provider.id, provider])
   );
 
-  const providerIds = Array.from(new Set(allModels.map((model) => model.provider))).sort();
+  const providerIds = Array.from(new Set(allModels.map((model) => model.provider)));
   const providers: PiProviderSummary[] = providerIds.map((providerId) => {
     const models = allModels
       .filter((model) => model.provider === providerId)
@@ -88,6 +88,11 @@ export function getPiModelsState() {
       availableModelCount: models.filter((model) => model.available).length,
       models
     };
+  });
+
+  providers.sort((a, b) => {
+    if (a.authConfigured !== b.authConfigured) return a.authConfigured ? -1 : 1;
+    return a.name.localeCompare(b.name);
   });
 
   return {
