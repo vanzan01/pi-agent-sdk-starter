@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 
 import AttachmentPreviewList from '@/components/AttachmentPreviewList';
 
-import { THINKING_PRESETS, type ThinkingLevel } from '../../shared/core';
+import { THINKING_LEVELS, THINKING_PRESETS, type ThinkingLevel } from '../../shared/core';
 import type { ChatModelPreference, ModelProvider } from '../../shared/core';
 import type { ContextWindowInfo } from '@/hooks/chat/useMessageStream';
 
@@ -238,6 +238,16 @@ export default function ChatInput({
     onProviderChange(newProvider);
   };
 
+  const formatTokenCount = (tokens: number) => {
+    if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(tokens % 1_000_000 === 0 ? 0 : 1)}M`;
+    return `${Math.round(tokens / 1000)}k`;
+  };
+
+  const contextTokensUsed = contextWindowInfo?.tokensUsed ?? 0;
+  const contextWindow = contextWindowInfo?.contextWindow ?? 0;
+  const contextTokensRemaining = Math.max(0, contextWindow - contextTokensUsed);
+  const isReasoningAvailable = provider === 'codex';
+
   const [isThinkingDropdownOpen, setIsThinkingDropdownOpen] = useState(false);
   const thinkingDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -402,36 +412,32 @@ export default function ChatInput({
               {isProviderUpdating && (
                 <Loader2 className="h-3.5 w-3.5 animate-spin text-[var(--text-tertiary)]" />
               )}
-              {/* Thinking Level Dropdown */}
-              {/* Note: Extended thinking is disabled for the Fast tier */}
+              {/* Codex reasoning-effort dropdown. GLM/ZAI has no reasoning modes, so it is disabled. */}
               <div ref={thinkingDropdownRef} className="relative">
                 <button
                   type="button"
-                  onClick={() => setIsThinkingDropdownOpen(!isThinkingDropdownOpen)}
-                  disabled={isThinkingLevelUpdating || modelPreference === 'fast'}
+                  onClick={() => isReasoningAvailable && setIsThinkingDropdownOpen(!isThinkingDropdownOpen)}
+                  disabled={isThinkingLevelUpdating || !isReasoningAvailable}
                   className={`flex items-center gap-1.5 rounded-full bg-[var(--user-bubble)] px-3 py-1.5 text-xs font-medium transition ${
                     isThinkingLevelUpdating ? 'opacity-70' : ''
                   } ${
-                    modelPreference === 'fast' ?
+                    !isReasoningAvailable ?
                       'cursor-not-allowed text-[var(--text-tertiary)] opacity-50'
-                    : thinkingLevel === 'off' ? 'text-[var(--text-tertiary)]'
                     : 'text-[var(--text-secondary)]'
                   }`}
                   title={
-                    modelPreference === 'fast' ?
-                      'Thinking requires Smart or Deep model'
-                    : `Thinking: ${THINKING_PRESETS[thinkingLevel].description}`
+                    isReasoningAvailable ?
+                      `Codex reasoning: ${THINKING_PRESETS[thinkingLevel].description}`
+                    : 'Reasoning modes are only available for Codex; GLM/ZAI has no modes'
                   }
                 >
                   <Brain className="h-3.5 w-3.5" />
-                  <span>
-                    {modelPreference === 'fast' ? 'N/A' : THINKING_PRESETS[thinkingLevel].label}
-                  </span>
+                  <span>{isReasoningAvailable ? THINKING_PRESETS[thinkingLevel].label : 'No modes'}</span>
                   {isThinkingLevelUpdating && <Loader2 className="h-3 w-3 animate-spin" />}
                 </button>
-                {isThinkingDropdownOpen && (
+                {isThinkingDropdownOpen && isReasoningAvailable && (
                   <div className="absolute bottom-full left-0 z-20 mb-2 w-48 rounded-xl bg-[var(--bg-white)] p-1 shadow-lg ring-1 ring-[var(--border-light)]">
-                    {(Object.keys(THINKING_PRESETS) as ThinkingLevel[]).map((level) => (
+                    {THINKING_LEVELS.map((level) => (
                       <button
                         key={level}
                         type="button"
@@ -461,14 +467,14 @@ export default function ChatInput({
               {contextWindowInfo && (
                 <div
                   className="flex items-center gap-1.5 rounded-full bg-[var(--user-bubble)] px-2.5 py-1 text-xs text-[var(--text-tertiary)]"
-                  title={`${contextWindowInfo.model} — ${contextWindowInfo.tokensUsed.toLocaleString()} tokens used of ${contextWindowInfo.contextWindow.toLocaleString()} context window`}
+                  title={`${contextWindowInfo.model} — ${contextTokensUsed.toLocaleString()} tokens used, ${contextTokensRemaining.toLocaleString()} remaining of ${contextWindow.toLocaleString()} context`}
                 >
                   <Gauge className="h-3 w-3" />
                   <span>
-                    {Math.round((contextWindowInfo.tokensUsed / contextWindowInfo.contextWindow) * 100)}%
+                    {Math.round((contextTokensUsed / contextWindow) * 100)}%
                   </span>
                   <span className="hidden sm:inline text-[var(--text-quaternary)]">
-                    {contextWindowInfo.contextWindow === 1_000_000 ? '1M' : `${Math.round(contextWindowInfo.contextWindow / 1000)}k`}
+                    {formatTokenCount(contextTokensRemaining)} left / {formatTokenCount(contextWindow)}
                   </span>
                 </div>
               )}

@@ -313,6 +313,7 @@ export function registerConfigHandlers(): void {
 
     try {
       await setConfigValue('thinkingLevel', level as ThinkingLevel);
+      await resetSession();
       const preset = THINKING_PRESETS[level as ThinkingLevel];
 
       return {

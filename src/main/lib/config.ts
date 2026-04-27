@@ -215,22 +215,44 @@ export async function setChatModelPreferenceSetting(
 /**
  * Gets thinking level from project config.
  */
+function normalizeThinkingLevel(level: unknown): ThinkingLevel {
+  switch (level) {
+    case 'low':
+    case 'medium':
+    case 'high':
+    case 'xhigh':
+      return level;
+    // Legacy names from the Claude-oriented UI.
+    case 'light':
+      return 'low';
+    case 'balanced':
+      return 'medium';
+    case 'deep':
+      return 'high';
+    case 'off':
+    default:
+      return DEFAULT_THINKING_LEVEL;
+  }
+}
+
 export function getThinkingLevel(): ThinkingLevel {
   const result = getConfigValue('thinkingLevel', DEFAULT_THINKING_LEVEL);
-  return result.value;
+  return normalizeThinkingLevel(result.value);
 }
 
 /**
  * Gets thinking level with source information.
  */
 export function getThinkingLevelWithSource(): ConfigValue<ThinkingLevel> {
-  return getConfigValue('thinkingLevel', DEFAULT_THINKING_LEVEL);
+  const result = getConfigValue('thinkingLevel', DEFAULT_THINKING_LEVEL);
+  return {
+    ...result,
+    value: normalizeThinkingLevel(result.value)
+  };
 }
 
 export function getMaxThinkingTokens(): number {
-  // Fast tier doesn't support extended thinking - always return 0
-  const preference = getChatModelPreferenceSetting();
-  if (preference === 'fast') {
+  if (getProvider() === 'glm') {
     return 0;
   }
   const level = getThinkingLevel();

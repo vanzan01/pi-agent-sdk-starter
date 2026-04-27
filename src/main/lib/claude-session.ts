@@ -170,18 +170,11 @@ function getModelIdForPreference(preference?: ChatModelPreference): string {
 
 type PiThinkingLevel = 'off' | 'minimal' | 'low' | 'medium' | 'high' | 'xhigh';
 
-function mapThinkingLevel(level: ThinkingLevel): PiThinkingLevel {
-  switch (level) {
-    case 'off':
-      return 'off';
-    case 'light':
-      return 'low';
-    case 'deep':
-      return 'high';
-    case 'balanced':
-    default:
-      return 'medium';
+function mapThinkingLevel(level: ThinkingLevel, provider: string): PiThinkingLevel {
+  if (provider === GLM_PROVIDER) {
+    return 'off';
   }
+  return level;
 }
 
 function messageToPrompt(message: SDKUserMessageContent | string): string {
@@ -244,7 +237,7 @@ async function createPiSession(systemPrompt: string, modelId: string): Promise<A
   const { session } = await createAgentSession({
     cwd,
     model,
-    thinkingLevel: mapThinkingLevel(getThinkingLevel()),
+    thinkingLevel: mapThinkingLevel(getThinkingLevel(), provider),
     authStorage,
     modelRegistry,
     resourceLoader,
@@ -254,6 +247,23 @@ async function createPiSession(systemPrompt: string, modelId: string): Promise<A
   return session;
 }
 
+function emitContextWindowUpdate(
+  session: AgentSession,
+  mainWindow: BrowserWindow | null,
+  appIdSnapshot: string
+): void {
+  const model = session.model;
+  const usage = session.getContextUsage();
+  const contextWindow = usage?.contextWindow ?? model?.contextWindow ?? 0;
+  if (!contextWindow) return;
+
+  sendAgentEvent(mainWindow, 'context-window-update', {
+    model: model ? `${model.provider}/${model.id}` : 'unknown',
+    contextWindow,
+    tokensUsed: usage?.tokens ?? 0
+  }, appIdSnapshot);
+}
+
 function bindSessionEvents(
   session: AgentSession,
   mainWindow: BrowserWindow | null,
@@ -261,6 +271,7 @@ function bindSessionEvents(
 ): () => void {
   setSessionId(session.sessionId);
   sendAgentEvent(mainWindow, 'session-updated', { sessionId: session.sessionId, resumed: false }, appIdSnapshot);
+  emitContextWindowUpdate(session, mainWindow, appIdSnapshot);
 
   return session.subscribe((event: Record<string, unknown>) => {
     if (getDebugMode()) {
@@ -315,7 +326,11 @@ function bindSessionEvents(
       case 'turn_start':
         sendAgentEvent(mainWindow, 'thinking-start', { index: -1 }, appIdSnapshot);
         break;
+      case 'message_end':
+        emitContextWindowUpdate(session, mainWindow, appIdSnapshot);
+        break;
       case 'agent_end':
+        emitContextWindowUpdate(session, mainWindow, appIdSnapshot);
         sendAgentEvent(mainWindow, 'message-complete', {}, appIdSnapshot);
         emitEventFromMain(mainWindow, {
           type: 'agent:completed',
@@ -341,6 +356,7 @@ export function getCurrentThinkingLevel(): ThinkingLevel {
 
 export async function setCurrentThinkingLevel(level: ThinkingLevel): Promise<void> {
   await setConfigValue('thinkingLevel', level);
+  await resetSession();
 }
 
 export async function setChatModelPreference(preference: ChatModelPreference): Promise<void> {
