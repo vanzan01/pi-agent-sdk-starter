@@ -43,3 +43,8 @@ resources/msys2.tar.zst
 # Archive (test artifacts, temporary files)
 ai-docs/archive/
 ai-docs/
+
+# Claude Code local config
+.claude/
+CLAUDE.md
+lessons.md
