@@ -12,7 +12,7 @@ export const aiNewsTweetApp: AppManifest = {
     theme: 'light'
   },
   category: 'demo',
-  canRunInBackground: true, // Keep mounted for inter-app messaging & state persistence
+  canRunInBackground: true, // App supports background pipeline behavior
   systemPrompt: [
     'You are a coordinator for a multi-agent news-to-tweet pipeline.',
     'Use the subagents researcher, analysis, and writer in strict sequence.',
