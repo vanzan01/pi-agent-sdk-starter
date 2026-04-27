@@ -155,7 +155,8 @@ const CORE_FILES = [
   'src/renderer/main.tsx',
   'src/renderer/index.html',
   'src/renderer/index.css',
-  'src/renderer/electron.d.ts'
+  'src/renderer/electron.d.ts',
+  'src/renderer/apps/shared/settingsTypes.ts'
 ];
 
 const CORE_CONFIG_FILES = [
@@ -224,7 +225,15 @@ function generateRegistry(apps: AppManifest[]): string {
   const imports: string[] = [];
   const appNames: string[] = [];
   for (const app of apps) {
-    const varName = app.id.replace(/-([a-z])/g, (_, c) => c.toUpperCase()) + 'App';
+    const varName =
+      app.id
+        .split(/[^a-zA-Z0-9]+/)
+        .filter(Boolean)
+        .map((part, index) => {
+          const lower = part.toLowerCase();
+          return index === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
+        })
+        .join('') + 'App';
     imports.push(`import { ${varName} } from './${app.id}';`);
     appNames.push(varName);
   }
@@ -297,6 +306,60 @@ ${renderCases.join('\n')}
     default:
       return null;
   }
+}
+`;
+}
+
+function toAppIdentifier(appId: string): string {
+  return appId
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part, index) => {
+      const lower = part.toLowerCase();
+      return index === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join('');
+}
+
+function toPascalIdentifier(appId: string): string {
+  const camel = toAppIdentifier(appId);
+  return camel.charAt(0).toUpperCase() + camel.slice(1);
+}
+
+function generateSettingsRegistry(apps: AppManifest[]): string {
+  const imports: string[] = [];
+  const entries: string[] = [];
+
+  for (const app of apps) {
+    const panelPath = join(
+      WORKSPACE_DIR,
+      'src',
+      'renderer',
+      'apps',
+      app.id,
+      'AppSettingsPanel.tsx'
+    );
+    if (!existsSync(panelPath)) continue;
+
+    const componentName = `${toPascalIdentifier(app.id)}AppSettingsPanel`;
+    imports.push(`import { ${componentName} } from './${app.id}/AppSettingsPanel';`);
+    entries.push(`  '${app.id}': ${componentName}`);
+  }
+
+  return `import type { ComponentType } from 'react';
+
+import type { AppManifest } from '../../shared/apps';
+import type { AppSettingsPanelProps } from './shared/settingsTypes';
+${imports.length > 0 ? `${imports.join('\n')}\n` : ''}
+type PanelComponent = ComponentType<AppSettingsPanelProps>;
+
+const registry: Record<string, PanelComponent> = {
+${entries.join(',\n')}
+};
+
+export function getAppSettingsPanel(app: AppManifest | undefined): PanelComponent | null {
+  if (!app) return null;
+  return registry[app.id] ?? null;
 }
 `;
 }
@@ -474,8 +537,12 @@ async function runExport(
   writeFileSync(join(outputDir, 'src/shared/apps/index.ts'), generateSharedAppsIndex(apps));
   mkdirSync(join(outputDir, 'src/renderer/apps'), { recursive: true });
   writeFileSync(join(outputDir, 'src/renderer/apps/index.tsx'), generateAppsIndex(apps));
+  writeFileSync(
+    join(outputDir, 'src/renderer/apps/settingsRegistry.ts'),
+    generateSettingsRegistry(apps)
+  );
   writeFileSync(join(outputDir, 'package.json'), generatePackageJson(projectName));
-  fileCount += 4;
+  fileCount += 5;
 
   // 8. Transform main/index.ts
   const mainIndexPath = join(outputDir, 'src/main/index.ts');

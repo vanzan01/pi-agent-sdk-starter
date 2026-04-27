@@ -91,7 +91,8 @@ const CORE_FILES = [
   'src/renderer/main.tsx',
   'src/renderer/index.html',
   'src/renderer/index.css',
-  'src/renderer/electron.d.ts'
+  'src/renderer/electron.d.ts',
+  'src/renderer/apps/shared/settingsTypes.ts'
 ];
 
 /**
@@ -693,8 +694,14 @@ function generateRegistryContent(appIds: string[], manifests: AppManifest[]): st
   for (const appId of appIds) {
     const manifest = manifests.find((m) => m.id === appId);
     if (manifest) {
-      // Convert app-id to camelCase for variable name
-      const varName = appId.replace(/-([a-z])/g, (_, c) => c.toUpperCase()) + 'App';
+      const varName = appId
+        .split(/[^a-zA-Z0-9]+/)
+        .filter(Boolean)
+        .map((part, index) => {
+          const lower = part.toLowerCase();
+          return index === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
+        })
+        .join('') + 'App';
       imports.push(`import { ${varName} } from './${appId}';`);
       appNames.push(varName);
     }
@@ -786,6 +793,53 @@ ${renderCases.join('\n')}
     default:
       return null;
   }
+}
+`;
+}
+
+function toAppIdentifier(appId: string): string {
+  return appId
+    .split(/[^a-zA-Z0-9]+/)
+    .filter(Boolean)
+    .map((part, index) => {
+      const lower = part.toLowerCase();
+      return index === 0 ? lower : lower.charAt(0).toUpperCase() + lower.slice(1);
+    })
+    .join('');
+}
+
+function toPascalIdentifier(appId: string): string {
+  const camel = toAppIdentifier(appId);
+  return camel.charAt(0).toUpperCase() + camel.slice(1);
+}
+
+function generateSettingsRegistryContent(projectRoot: string, appIds: string[]): string {
+  const imports: string[] = [];
+  const entries: string[] = [];
+
+  for (const appId of appIds) {
+    const panelPath = join(projectRoot, 'src', 'renderer', 'apps', appId, 'AppSettingsPanel.tsx');
+    if (!existsSync(panelPath)) continue;
+
+    const componentName = `${toPascalIdentifier(appId)}AppSettingsPanel`;
+    imports.push(`import { ${componentName} } from './${appId}/AppSettingsPanel';`);
+    entries.push(`  '${appId}': ${componentName}`);
+  }
+
+  return `import type { ComponentType } from 'react';
+
+import type { AppManifest } from '../../shared/apps';
+import type { AppSettingsPanelProps } from './shared/settingsTypes';
+${imports.length > 0 ? `${imports.join('\n')}\n` : ''}
+type PanelComponent = ComponentType<AppSettingsPanelProps>;
+
+const registry: Record<string, PanelComponent> = {
+${entries.join(',\n')}
+};
+
+export function getAppSettingsPanel(app: AppManifest | undefined): PanelComponent | null {
+  if (!app) return null;
+  return registry[app.id] ?? null;
 }
 `;
 }
@@ -1015,6 +1069,24 @@ async function doExport(
     const appsIndexContent = generateAppsIndexContent(config.selectedAppIds, manifests);
     await mkdir(join(outputDir, 'src/renderer/apps'), { recursive: true });
     await writeFile(join(outputDir, 'src/renderer/apps/index.tsx'), appsIndexContent);
+    current++;
+
+    // Generate renderer apps settingsRegistry.ts
+    sendProgress({
+      jobId,
+      status: 'generating',
+      current,
+      total,
+      currentFile: 'apps/settingsRegistry.ts'
+    });
+    const settingsRegistryContent = generateSettingsRegistryContent(
+      projectRoot,
+      config.selectedAppIds
+    );
+    await writeFile(
+      join(outputDir, 'src/renderer/apps/settingsRegistry.ts'),
+      settingsRegistryContent
+    );
     current++;
 
     // Generate package.json
