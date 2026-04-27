@@ -257,10 +257,19 @@ function emitContextWindowUpdate(
   const contextWindow = usage?.contextWindow ?? model?.contextWindow ?? 0;
   if (!contextWindow) return;
 
+  const stats = session.getSessionStats();
   sendAgentEvent(mainWindow, 'context-window-update', {
     model: model ? `${model.provider}/${model.id}` : 'unknown',
+    provider: model?.provider ?? 'unknown',
+    modelId: model?.id ?? 'unknown',
+    thinkingLevel: session.thinkingLevel,
     contextWindow,
-    tokensUsed: usage?.tokens ?? 0
+    tokensUsed: usage?.tokens ?? 0,
+    contextPercent: usage?.percent ?? null,
+    totalInputTokens: stats.tokens.input,
+    totalOutputTokens: stats.tokens.output,
+    totalTokens: stats.tokens.total,
+    cost: stats.cost
   }, appIdSnapshot);
 }
 

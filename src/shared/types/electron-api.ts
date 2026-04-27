@@ -415,7 +415,19 @@ export interface AgentBridge {
   ) => () => void;
   onContextWindowUpdate: (
     appId: string,
-    callback: (data: { model: string; contextWindow: number; tokensUsed: number }) => void
+    callback: (data: {
+      model: string;
+      provider?: string;
+      modelId?: string;
+      thinkingLevel?: string;
+      contextWindow: number;
+      tokensUsed: number;
+      contextPercent?: number | null;
+      totalInputTokens?: number;
+      totalOutputTokens?: number;
+      totalTokens?: number;
+      cost?: number;
+    }) => void
   ) => () => void;
 }
 

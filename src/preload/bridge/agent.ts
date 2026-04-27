@@ -236,12 +236,32 @@ export function createAgentBridge(ipcRenderer: IpcRenderer): AgentBridge {
           appId?: string;
           conversationId?: string;
           model: string;
+          provider?: string;
+          modelId?: string;
+          thinkingLevel?: string;
           contextWindow: number;
           tokensUsed: number;
+          contextPercent?: number | null;
+          totalInputTokens?: number;
+          totalOutputTokens?: number;
+          totalTokens?: number;
+          cost?: number;
         }
       ) => {
         if (!data || (data.appId !== appId && data.conversationId !== appId)) return;
-        callback({ model: data.model, contextWindow: data.contextWindow, tokensUsed: data.tokensUsed });
+        callback({
+          model: data.model,
+          provider: data.provider,
+          modelId: data.modelId,
+          thinkingLevel: data.thinkingLevel,
+          contextWindow: data.contextWindow,
+          tokensUsed: data.tokensUsed,
+          contextPercent: data.contextPercent,
+          totalInputTokens: data.totalInputTokens,
+          totalOutputTokens: data.totalOutputTokens,
+          totalTokens: data.totalTokens,
+          cost: data.cost
+        });
       };
       ipcRenderer.on('agent:context-window-update', listener);
       return () => ipcRenderer.removeListener('agent:context-window-update', listener);

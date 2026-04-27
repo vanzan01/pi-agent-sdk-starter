@@ -5,8 +5,16 @@ import { appendChunkToMessages } from '@/utils/chatMessageTransforms';
 
 export interface ContextWindowInfo {
   model: string;
+  provider?: string;
+  modelId?: string;
+  thinkingLevel?: string;
   contextWindow: number;
   tokensUsed: number;
+  contextPercent?: number | null;
+  totalInputTokens?: number;
+  totalOutputTokens?: number;
+  totalTokens?: number;
+  cost?: number;
 }
 
 interface UseMessageStreamProps {
@@ -227,8 +235,16 @@ export function useMessageStream({
       (data) => {
         setContextWindowInfo?.({
           model: data.model,
+          provider: data.provider,
+          modelId: data.modelId,
+          thinkingLevel: data.thinkingLevel,
           contextWindow: data.contextWindow,
-          tokensUsed: data.tokensUsed
+          tokensUsed: data.tokensUsed,
+          contextPercent: data.contextPercent,
+          totalInputTokens: data.totalInputTokens,
+          totalOutputTokens: data.totalOutputTokens,
+          totalTokens: data.totalTokens,
+          cost: data.cost
         });
       }
     );

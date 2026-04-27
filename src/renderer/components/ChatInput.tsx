@@ -243,9 +243,19 @@ export default function ChatInput({
     return `${Math.round(tokens / 1000)}k`;
   };
 
+  const formatCost = (cost: number | undefined) =>
+    typeof cost === 'number' && Number.isFinite(cost) && cost > 0 ? `$${cost.toFixed(2)}` : null;
+
   const contextTokensUsed = contextWindowInfo?.tokensUsed ?? 0;
   const contextWindow = contextWindowInfo?.contextWindow ?? 0;
   const contextTokensRemaining = Math.max(0, contextWindow - contextTokensUsed);
+  const contextPercent =
+    typeof contextWindowInfo?.contextPercent === 'number' ?
+      Math.round(contextWindowInfo.contextPercent)
+    : contextWindow > 0 ? Math.round((contextTokensUsed / contextWindow) * 100)
+    : 0;
+  const displayModelId = contextWindowInfo?.modelId ?? contextWindowInfo?.model?.split('/').pop();
+  const displayCost = formatCost(contextWindowInfo?.cost);
   const isReasoningAvailable = provider === 'codex';
 
   const [isThinkingDropdownOpen, setIsThinkingDropdownOpen] = useState(false);
@@ -467,15 +477,19 @@ export default function ChatInput({
               {contextWindowInfo && (
                 <div
                   className="flex items-center gap-1.5 rounded-full bg-[var(--user-bubble)] px-2.5 py-1 text-xs text-[var(--text-tertiary)]"
-                  title={`${contextWindowInfo.model} — ${contextTokensUsed.toLocaleString()} tokens used, ${contextTokensRemaining.toLocaleString()} remaining of ${contextWindow.toLocaleString()} context`}
+                  title={`${contextWindowInfo.model}${contextWindowInfo.thinkingLevel ? ` · ${contextWindowInfo.thinkingLevel}` : ''} — ${contextTokensUsed.toLocaleString()} tokens used, ${contextTokensRemaining.toLocaleString()} remaining of ${contextWindow.toLocaleString()} context${typeof contextWindowInfo.totalInputTokens === 'number' ? ` · input ${contextWindowInfo.totalInputTokens.toLocaleString()}` : ''}${typeof contextWindowInfo.totalOutputTokens === 'number' ? ` · output ${contextWindowInfo.totalOutputTokens.toLocaleString()}` : ''}${displayCost ? ` · ${displayCost}` : ''}`}
                 >
                   <Gauge className="h-3 w-3" />
-                  <span>
-                    {Math.round((contextTokensUsed / contextWindow) * 100)}%
-                  </span>
+                  {displayModelId && (
+                    <span className="hidden md:inline text-[var(--text-quaternary)]">{displayModelId}</span>
+                  )}
+                  <span>{contextPercent}%</span>
                   <span className="hidden sm:inline text-[var(--text-quaternary)]">
                     {formatTokenCount(contextTokensRemaining)} left / {formatTokenCount(contextWindow)}
                   </span>
+                  {displayCost && (
+                    <span className="hidden lg:inline text-[var(--text-quaternary)]">{displayCost}</span>
+                  )}
                 </div>
               )}
             <button
