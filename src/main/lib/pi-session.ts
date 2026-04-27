@@ -38,6 +38,7 @@ import {
   resetAbortFlag,
   setSessionId
 } from './message-queue';
+import { normalizePiSdkError } from './pi-error-normalizer';
 import {
   createEmbeddedPiAuthStorage,
   createEmbeddedPiModelRegistry,
@@ -564,7 +565,10 @@ export async function runSingleAgentCall(
     return { success: true, response: responseText };
   } catch (error) {
     console.error('[SingleAgent] Error:', error);
-    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    return {
+      success: false,
+      error: normalizePiSdkError(error, 'Unknown error', ensureEmbeddedPiAgentPaths())
+    };
   } finally {
     unsubscribe?.();
     session?.dispose();
@@ -671,13 +675,18 @@ export async function startStreamingSession(
     }
   } catch (error) {
     console.error('Error in Pi SDK streaming session:', error);
+    const normalizedError = normalizePiSdkError(
+      error,
+      'Unknown error occurred',
+      ensureEmbeddedPiAgentPaths()
+    );
     resolveSessionReady?.();
     resolveSessionReady = null;
     sendAgentEvent(
       mainWindow,
       'message-error',
       {
-        error: error instanceof Error ? error.message : 'Unknown error occurred'
+        error: normalizedError
       },
       sessionAppIdSnapshot
     );
@@ -686,7 +695,7 @@ export async function startStreamingSession(
       timestamp: Date.now(),
       sourceAppId: 'core',
       appId: sessionAppIdSnapshot,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: normalizedError
     });
   } finally {
     activePromptPromise = null;
