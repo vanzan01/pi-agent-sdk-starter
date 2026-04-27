@@ -11,14 +11,14 @@ type AgentInfo = {
   definition: AgentDefinition;
 };
 
-// Look for agents in .claude/agents/{app-id}/ directories
+// Look for agents in .agents/agents/{app-id}/ directories
 const agentRoots = Array.from(
   new Set(
     [
-      join(app.getAppPath(), '.claude', 'agents'),
-      join(app.getAppPath(), 'out', '.claude', 'agents'),
-      join(process.resourcesPath || process.cwd(), '.claude', 'agents'),
-      join(process.cwd(), '.claude', 'agents')
+      join(app.getAppPath(), '.agents', 'agents'),
+      join(app.getAppPath(), 'out', '.agents', 'agents'),
+      join(process.resourcesPath || process.cwd(), '.agents', 'agents'),
+      join(process.cwd(), '.agents', 'agents')
     ].filter(Boolean)
   )
 );
@@ -89,8 +89,8 @@ function parseAgentFile(filePath: string): AgentDefinition | null {
 }
 
 /**
- * Discover agents from .claude/agents/{app-id}/*.md
- * Structure: .claude/agents/ai-news-tweet/researcher.md
+ * Discover agents from .agents/agents/{app-id}/*.md
+ * Structure: .agents/agents/ai-news-tweet/researcher.md
  */
 function discoverAgents(): AgentInfo[] {
   const agents: AgentInfo[] = [];
@@ -138,7 +138,7 @@ function discoverAgents(): AgentInfo[] {
 }
 
 /**
- * Get agents for a specific app by discovering from .claude/agents/{app-id}/
+ * Get agents for a specific app by discovering from .agents/agents/{app-id}/
  */
 export function getAgentsForApp(appId: string): Record<string, AgentDefinition> {
   const allAgents = discoverAgents();

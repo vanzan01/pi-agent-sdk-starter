@@ -32,7 +32,7 @@ export function buildAppContext(appId?: string | null): AppContext {
   );
   setActiveAppContext(manifest.id, combinedSystemPrompt);
 
-  // Discover agents from .claude/agents/ folder, merging with manifest agents
+  // Discover agents from .agents/agents/ folder, merging with manifest agents
   // Discovered agents take precedence over manifest-defined agents
   const discoveredAgents = getAgentsForApp(manifest.id);
   const agents = {

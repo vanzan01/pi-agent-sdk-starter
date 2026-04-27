@@ -76,7 +76,7 @@ async function buildFileTree(
         continue;
       }
       // Skip hidden files/folders (starting with .)
-      if (entry.name.startsWith('.') && entry.name !== '.claude') {
+      if (entry.name.startsWith('.') && entry.name !== '.agents') {
         continue;
       }
 
@@ -128,9 +128,9 @@ export function registerFilesystemHandlers(getMainWindow: () => BrowserWindow | 
     try {
       const workspaceDir = getWorkspaceDir();
 
-      // Resolve relative .claude paths to workspace directory
+      // Resolve relative .agents paths to workspace directory
       let resolvedPath = filePath;
-      if (filePath.startsWith('.claude')) {
+      if (filePath.startsWith('.agents')) {
         resolvedPath = join(workspaceDir, filePath);
       }
 

@@ -6,15 +6,15 @@ import { fileURLToPath } from 'url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 /**
- * Build agent skills from the local `.claude/skills` directory into `out/.claude/skills`.
+ * Build agent skills from the local `.agents/skills` directory into `out/.agents/skills`.
  * This runs for both dev (preDev) and production builds (beforeBuild hook).
  */
 
 const projectRoot = join(__dirname, '..');
-const sourceAgentRoot = join(projectRoot, '.claude');
+const sourceAgentRoot = join(projectRoot, '.agents');
 const sourceSkillsRoot = join(sourceAgentRoot, 'skills');
 const sourceAgentsRoot = join(sourceAgentRoot, 'agents');
-const targetAgentRoot = join(projectRoot, 'out', '.claude');
+const targetAgentRoot = join(projectRoot, 'out', '.agents');
 const targetSkillsRoot = join(targetAgentRoot, 'skills');
 const targetAgentsRoot = join(targetAgentRoot, 'agents');
 
@@ -38,7 +38,7 @@ mkdirSync(targetSkillsRoot, { recursive: true });
 
 // Find all skills
 if (!existsSync(sourceSkillsRoot)) {
-  console.warn('No .claude/skills directory found at:', sourceSkillsRoot);
+  console.warn('No .agents/skills directory found at:', sourceSkillsRoot);
   process.exit(0);
 }
 
@@ -178,7 +178,7 @@ if (bunBuildFiles.length > 0) {
 console.log('\n✅ Skills build completed successfully');
 
 // ============================================================
-// Build Agents from .claude/agents/{app-id}/*.md
+// Build Agents from .agents/agents/{app-id}/*.md
 // ============================================================
 
 console.log('\n\nBuilding agent definitions...');
@@ -221,5 +221,5 @@ if (existsSync(sourceAgentsRoot)) {
     console.log('\n✅ Agents build completed successfully');
   }
 } else {
-  console.log('No .claude/agents directory found, skipping agents build.');
+  console.log('No .agents/agents directory found, skipping agents build.');
 }

@@ -29,7 +29,7 @@ export interface SkillMetadata {
  */
 export async function loadSkillYaml(skillName: string): Promise<SkillMetadata> {
   const workspaceDir = getWorkspaceDir();
-  const skillPath = join(workspaceDir, '.claude', 'skills', skillName, 'SKILL.md');
+  const skillPath = join(workspaceDir, '.agents', 'skills', skillName, 'SKILL.md');
 
   const content = await readFile(skillPath, 'utf-8').catch((error: unknown) => {
     const message =
@@ -70,7 +70,7 @@ export async function loadSkillYaml(skillName: string): Promise<SkillMetadata> {
  */
 export async function loadSkillContent(skillName: string): Promise<string> {
   const workspaceDir = getWorkspaceDir();
-  const skillPath = join(workspaceDir, '.claude', 'skills', skillName, 'SKILL.md');
+  const skillPath = join(workspaceDir, '.agents', 'skills', skillName, 'SKILL.md');
 
   const content = await readFile(skillPath, 'utf-8').catch((error: unknown) => {
     const message = error instanceof Error ? error.message : String(error);
@@ -86,7 +86,7 @@ export async function loadSkillContent(skillName: string): Promise<string> {
  * agent will read the full SKILL.md and supporting files on demand.
  */
 export function buildSkillPromptSnippet(skillMeta: SkillMetadata): string {
-  const skillDir = `.claude/skills/${skillMeta.name}`;
+  const skillDir = `.agents/skills/${skillMeta.name}`;
 
   return `--- AVAILABLE SKILL: ${skillMeta.name} ---
 Description: ${skillMeta.description}

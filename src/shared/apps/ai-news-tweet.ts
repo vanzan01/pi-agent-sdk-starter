@@ -27,6 +27,6 @@ export const aiNewsTweetApp: AppManifest = {
     'Do not wait for all agents to finish before streaming; send each block as it is ready.',
     'Keep responses concise and factual.'
   ].join(' '),
-  // Agents are loaded from .claude/agents/ai-news-tweet/*.md files
+  // Agents are loaded from .agents/agents/ai-news-tweet/*.md files
   features: ['chat', 'filesystem']
 };

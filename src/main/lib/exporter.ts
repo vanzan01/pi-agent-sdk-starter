@@ -610,9 +610,9 @@ export async function generateExportPreview(config: ExportConfig): Promise<Expor
     files.push(...appRendererFiles);
   }
 
-  // 5. Collect ALL skills (export everything from .claude/skills/)
+  // 5. Collect ALL skills (export everything from .agents/skills/)
   // This prevents runtime "skill not found" errors - skills are tiny files so export all
-  const skillsDir = join(projectRoot, '.claude/skills');
+  const skillsDir = join(projectRoot, '.agents/skills');
   const allSkills: string[] = [];
   if (existsSync(skillsDir)) {
     const skillEntries = readdirSync(skillsDir, { withFileTypes: true });
@@ -621,7 +621,7 @@ export async function generateExportPreview(config: ExportConfig): Promise<Expor
         allSkills.push(entry.name);
         const skillFiles = await collectFilesInDir(
           projectRoot,
-          `.claude/skills/${entry.name}`,
+          `.agents/skills/${entry.name}`,
           'skill'
         );
         files.push(...skillFiles);
@@ -629,9 +629,9 @@ export async function generateExportPreview(config: ExportConfig): Promise<Expor
     }
   }
 
-  // 6. Collect agents (stored in .claude/agents/{appId}/)
+  // 6. Collect agents (stored in .agents/agents/{appId}/)
   for (const appId of config.selectedAppIds) {
-    const agentDir = `.claude/agents/${appId}`;
+    const agentDir = `.agents/agents/${appId}`;
     const agentDirPath = join(projectRoot, agentDir);
     if (existsSync(agentDirPath)) {
       const agentFiles = await collectFilesInDir(projectRoot, agentDir, 'skill');
@@ -654,7 +654,7 @@ export async function generateExportPreview(config: ExportConfig): Promise<Expor
     files.push(...dirFiles);
   }
 
-  // 8. Collect additional .claude assets declared by apps
+  // 8. Collect additional .agents assets declared by apps
   const claudeAssets = new Set<string>();
   for (const appId of config.selectedAppIds) {
     const appManifest = getAppById(appId);
@@ -665,7 +665,7 @@ export async function generateExportPreview(config: ExportConfig): Promise<Expor
     }
   }
   for (const asset of claudeAssets) {
-    const assetPath = `.claude/${asset}`;
+    const assetPath = `.agents/${asset}`;
     const assetFullPath = join(projectRoot, assetPath);
     if (existsSync(assetFullPath)) {
       const assetFiles = await collectFilesInDir(projectRoot, assetPath, 'skill');

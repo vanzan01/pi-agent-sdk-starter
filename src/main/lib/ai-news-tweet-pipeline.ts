@@ -64,7 +64,7 @@ async function loadAgentDefinition(agentId: string): Promise<string> {
   const workspaceDir = getWorkspaceDir();
   // Map generic id to file name: research -> researcher.md
   const fileName = agentId === 'research' ? 'researcher' : agentId;
-  const agentPath = join(workspaceDir, '.claude', 'agents', 'ai-news-tweet', `${fileName}.md`);
+  const agentPath = join(workspaceDir, '.agents', 'agents', 'ai-news-tweet', `${fileName}.md`);
   
   try {
     const content = await readFile(agentPath, 'utf-8');
@@ -76,7 +76,7 @@ async function loadAgentDefinition(agentId: string): Promise<string> {
 }
 
 function buildSkillPrompt(skillMeta: SkillMetadata): string {
-  const skillDir = `.claude/skills/${skillMeta.name}`;
+  const skillDir = `.agents/skills/${skillMeta.name}`;
   return `--- AVAILABLE SKILL: ${skillMeta.name} ---
 Description: ${skillMeta.description}
 Documentation: ${skillDir}/SKILL.md

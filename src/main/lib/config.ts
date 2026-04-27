@@ -864,31 +864,31 @@ export async function ensureWorkspaceDir(): Promise<void> {
       await mkdir(workspaceDir, { recursive: true });
     }
 
-    // Always sync .claude directory - delete and replace to ensure clean state
+    // Always sync .agents directory - delete and replace to ensure clean state
     try {
-      // .claude directory is at out/.claude in both dev and production
-      // In development: buildSkills.js builds to out/.claude, app.getAppPath() returns project root
-      // In production: .claude is unpacked to app.asar.unpacked/out/.claude
+      // .agents directory is at out/.agents in both dev and production
+      // In development: buildSkills.js builds to out/.agents, app.getAppPath() returns project root
+      // In production: .agents is unpacked to app.asar.unpacked/out/.agents
       const isDev = process.env.NODE_ENV === 'development' || process.env.ELECTRON_RENDERER_URL;
       const sourceAgentDir =
         isDev ?
-          join(app.getAppPath(), 'out', '.claude')
-        : join(process.resourcesPath, 'app.asar.unpacked', 'out', '.claude');
+          join(app.getAppPath(), 'out', '.agents')
+        : join(process.resourcesPath, 'app.asar.unpacked', 'out', '.agents');
 
       if (existsSync(sourceAgentDir)) {
-        console.log('Syncing .claude directory to workspace...');
-        const destAgentDir = join(workspaceDir, '.claude');
+        console.log('Syncing .agents directory to workspace...');
+        const destAgentDir = join(workspaceDir, '.agents');
 
-        // Remove existing .claude directory if it exists
+        // Remove existing .agents directory if it exists
         if (existsSync(destAgentDir)) {
           await rm(destAgentDir, { recursive: true, force: true });
         }
 
-        // Copy entire .claude directory (including skills)
+        // Copy entire .agents directory (including skills)
         await cp(sourceAgentDir, destAgentDir, { recursive: true });
-        console.log('.claude directory synced successfully');
+        console.log('.agents directory synced successfully');
       } else {
-        console.warn(`Could not find .claude directory at ${sourceAgentDir}`);
+        console.warn(`Could not find .agents directory at ${sourceAgentDir}`);
       }
 
       // Only sync .env file if destination doesn't exist (preserve user settings)
@@ -909,7 +909,7 @@ export async function ensureWorkspaceDir(): Promise<void> {
         console.log('.env file already exists in workspace, preserving user settings');
       }
     } catch (error) {
-      console.error('Failed to sync .claude directory:', error);
+      console.error('Failed to sync .agents directory:', error);
     }
 
     // Sync core binaries to workspace/bin/ directory

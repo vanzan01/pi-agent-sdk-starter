@@ -79,8 +79,8 @@ const TEST_SUITES: TestSuite[] = [
     checks: {
       shouldExist: [
         'src/shared/apps/ai-news-tweet.ts',
-        '.claude/agents/ai-news-tweet/',
-        '.claude/skills/news-tools/'
+        '.agents/agents/ai-news-tweet/',
+        '.agents/skills/news-tools/'
       ],
       shouldNotExist: ['src/shared/apps/chat.ts']
     }
@@ -443,14 +443,14 @@ async function runExport(
   }
 
   // 5. Copy ALL skills
-  const skillsDir = join(WORKSPACE_DIR, '.claude/skills');
+  const skillsDir = join(WORKSPACE_DIR, '.agents/skills');
   if (existsSync(skillsDir)) {
     for (const entry of readdirSync(skillsDir, { withFileTypes: true })) {
       if (entry.isDirectory()) {
         fileCount += copyDir(
           join(skillsDir, entry.name),
-          join(outputDir, '.claude/skills', entry.name),
-          `.claude/skills/${entry.name}`
+          join(outputDir, '.agents/skills', entry.name),
+          `.agents/skills/${entry.name}`
         );
       }
     }
@@ -458,12 +458,12 @@ async function runExport(
 
   // 6. Copy agents for selected apps
   for (const app of apps) {
-    const agentDir = join(WORKSPACE_DIR, `.claude/agents/${app.id}`);
+    const agentDir = join(WORKSPACE_DIR, `.agents/agents/${app.id}`);
     if (existsSync(agentDir)) {
       fileCount += copyDir(
         agentDir,
-        join(outputDir, `.claude/agents/${app.id}`),
-        `.claude/agents/${app.id}`
+        join(outputDir, `.agents/agents/${app.id}`),
+        `.agents/agents/${app.id}`
       );
     }
   }

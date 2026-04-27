@@ -12,10 +12,10 @@ type SkillInfo = {
 const skillRoots = Array.from(
   new Set(
     [
-      join(app.getAppPath(), 'out', '.claude', 'skills'),
-      join(app.getAppPath(), '.claude', 'skills'), // fallback if running against source
-      join(process.resourcesPath || process.cwd(), 'out', '.claude', 'skills'),
-      join(process.cwd(), 'out', '.claude', 'skills')
+      join(app.getAppPath(), 'out', '.agents', 'skills'),
+      join(app.getAppPath(), '.agents', 'skills'), // fallback if running against source
+      join(process.resourcesPath || process.cwd(), 'out', '.agents', 'skills'),
+      join(process.cwd(), 'out', '.agents', 'skills')
     ].filter(Boolean)
   )
 );
@@ -49,7 +49,7 @@ export function getSkillsForApp(appId: string): string[] {
   const missing = app.skills.filter((s) => !allowed.includes(s));
   if (missing.length > 0) {
     console.warn(
-      `App "${appId}" requested skills not built or missing in out/.claude/skills: ${missing.join(
+      `App "${appId}" requested skills not built or missing in out/.agents/skills: ${missing.join(
         ', '
       )}`
     );

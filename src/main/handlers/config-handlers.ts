@@ -101,7 +101,7 @@ export function registerConfigHandlers(): void {
     // Reset the SDK session so it starts fresh with the new workspace cwd
     await resetSession();
 
-    // Create the new workspace directory and sync .claude folder
+    // Create the new workspace directory and sync .agents folder
     await ensureWorkspaceDir();
 
     // Notify all renderer windows about the workspace change

@@ -30,7 +30,7 @@ if (!existsSync(outDir)) {
   mkdirSync(outDir, { recursive: true });
 }
 
-// Step 3: Run buildSkills.js to compile skills to out/.claude/skills
+// Step 3: Run buildSkills.js to compile skills to out/.agents/skills
 const buildSkillsScript = join(__dirname, 'buildSkills.js');
 const buildResult = spawnSync('node', [buildSkillsScript], {
   stdio: 'inherit',
