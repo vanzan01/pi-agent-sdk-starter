@@ -1,10 +1,10 @@
-import { getModel } from '@mariozechner/pi-ai';
+import { getModel } from '@earendil-works/pi-ai';
 import {
   createAgentSession,
   DefaultResourceLoader,
   SessionManager,
   type AgentSession
-} from '@mariozechner/pi-coding-agent';
+} from '@earendil-works/pi-coding-agent';
 import { BrowserWindow } from 'electron';
 
 import type { AgentDefinition } from '../../shared/apps';

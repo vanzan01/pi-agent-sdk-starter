@@ -1,6 +1,6 @@
 # Pi SDK Starter Kit
 
-[![Built with Pi SDK](https://img.shields.io/badge/Pi%20SDK-Starter%20Kit-00bcd4)](https://www.npmjs.com/package/@mariozechner/pi-coding-agent)
+[![Built with Pi SDK](https://img.shields.io/badge/Pi%20SDK-Starter%20Kit-00bcd4)](https://www.npmjs.com/package/@earendil-works/pi-coding-agent)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 > A batteries-included starter for building agentic desktop apps with Pi SDK and configurable providers.
@@ -34,12 +34,14 @@ bun run test:ai-news-tweet
 - Bun available on PATH, or use the bundled runtime after first setup
 - Provider credentials configured through the starter's Pi SDK auth flow
 
+> **Use `bun install`, not `npm install`.** The native-module rebuild step (`electron-rebuild`) is incompatible with current Electron versions and will fail under npm. Bun uses the prebuilt `better-sqlite3` binary directly, so install completes cleanly.
+
 ```bash
 bun install
 bun run dev
 ```
 
-The starter embeds `@mariozechner/pi-coding-agent`; users do not need a separate global Pi install. Provider credentials are intentionally separate from the Pi CLI and are stored in the shared Pi SDK auth file:
+The starter embeds `@earendil-works/pi-coding-agent`; users do not need a separate global Pi install. Provider credentials are intentionally separate from the Pi CLI and are stored in the shared Pi SDK auth file:
 
 ```text
 ~/.pi-sdk/auth.json
