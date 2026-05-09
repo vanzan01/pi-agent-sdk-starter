@@ -27,7 +27,7 @@
     "clean": "node scripts/clean.js"
   },
   "dependencies": {
-    "@mariozechner/pi-coding-agent": "^0.70.2",
+    "@earendil-works/pi-coding-agent": "^0.74.0",
     "@monaco-editor/react": "^4.7.0",
     "better-sqlite3": "^12.4.6",
     "chokidar": "^5.0.0",
@@ -97,10 +97,10 @@
       "package.json"
     ],
     "asarUnpack": [
-      "out/node_modules/@mariozechner/pi-coding-agent/**",
-      "out/node_modules/@mariozechner/pi-ai/**",
-      "out/node_modules/@mariozechner/pi-agent-core/**",
-      "out/node_modules/@mariozechner/pi-tui/**",
+      "out/node_modules/@earendil-works/pi-coding-agent/**",
+      "out/node_modules/@earendil-works/pi-ai/**",
+      "out/node_modules/@earendil-works/pi-agent-core/**",
+      "out/node_modules/@earendil-works/pi-tui/**",
       "out/node_modules/@img/**/*",
       "out/node_modules/better-sqlite3/**/*",
       "out/.agents/**/*"

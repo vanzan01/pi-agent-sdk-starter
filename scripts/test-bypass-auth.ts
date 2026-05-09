@@ -1,11 +1,11 @@
-import { getModel } from '@mariozechner/pi-ai';
+import { getModel } from '@earendil-works/pi-ai';
 import {
   AuthStorage,
   createAgentSession,
   DefaultResourceLoader,
   ModelRegistry,
   SessionManager
-} from '@mariozechner/pi-coding-agent';
+} from '@earendil-works/pi-coding-agent';
 
 import { getPiSdkTestAgentPaths } from './pi-sdk-test-paths';
 

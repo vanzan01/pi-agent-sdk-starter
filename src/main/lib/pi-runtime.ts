@@ -1,6 +1,6 @@
 import { mkdirSync } from 'fs';
 import { homedir } from 'os';
-import { AuthStorage, ModelRegistry, SettingsManager } from '@mariozechner/pi-coding-agent';
+import { AuthStorage, ModelRegistry, SettingsManager } from '@earendil-works/pi-coding-agent';
 
 import { getWorkspaceDir } from './config';
 import {

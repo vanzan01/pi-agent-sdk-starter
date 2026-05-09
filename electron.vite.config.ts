@@ -5,7 +5,7 @@ import { defineConfig, externalizeDepsPlugin } from 'electron-vite';
 
 export default defineConfig({
   main: {
-    plugins: [externalizeDepsPlugin({ exclude: ['@mariozechner/pi-coding-agent'] })],
+    plugins: [externalizeDepsPlugin({ exclude: ['@earendil-works/pi-coding-agent'] })],
     build: {
       outDir: 'out/main',
       lib: {

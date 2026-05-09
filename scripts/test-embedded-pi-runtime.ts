@@ -1,7 +1,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join, relative } from 'path';
-import { AuthStorage, ModelRegistry } from '@mariozechner/pi-coding-agent';
+import { AuthStorage, ModelRegistry } from '@earendil-works/pi-coding-agent';
 
 import { buildPiRuntimePaths } from '../src/main/lib/pi-runtime-paths';
 

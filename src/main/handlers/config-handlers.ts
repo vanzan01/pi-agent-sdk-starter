@@ -79,7 +79,7 @@ function requestRendererOAuthInput(
 function getPiSdkVersion(): string {
   try {
     // Try to resolve the Pi SDK package.json
-    const sdkPackagePath = requireModule.resolve('@mariozechner/pi-coding-agent/package.json');
+    const sdkPackagePath = requireModule.resolve('@earendil-works/pi-coding-agent/package.json');
 
     // Handle app.asar unpacked case (production builds)
     let packagePath = sdkPackagePath;
